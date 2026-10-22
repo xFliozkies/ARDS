@@ -227,3 +227,14 @@ Observed checks: 22 website tests OK (one skipped), six static accessibility tes
 passed, targeted polish browser geometry checks passed, and the full responsive
 browser/axe suite passed at 375/768/1280px. Existing private-data, reveal, recovery
 and export checks passed. No server or database changes in this follow-up.
+
+## Toolbar clarification — 2026-10-22
+
+The learner clarified that all editor actions must share one line. Removed the
+stacking container-query rules. Write/Preview, the tools, and Next/Submit now
+share a single grid row. Compact 13px labels/spacing fit all controls at the
+learner's 1920px desktop width; narrower panels scroll horizontally rather than
+wrapping. Focus remains keyboard accessible. Targeted browser checks now assert
+one shared vertical center at 375/768/1280/1920px and no toolbar overflow at
+1920px. These checks passed, as did the full responsive browser/axe suite and six
+static accessibility tests. No server or learner-data changes.

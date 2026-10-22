@@ -589,17 +589,14 @@ a:focus-visible,
 #filter-summary.has-search .search-result-space{margin:8px 0 0 auto}
 #problem-pagination{margin:12px 0;gap:12px}
 #filter-summary.has-search+#problem-pagination{margin-top:8px}
-/* Center the tools within the whole editor, rather than the remaining space. */
-#view-problem .editor-panel{container-type:inline-size}
-#view-problem .editor-toolbar{display:grid;grid-template-columns:minmax(0,1fr);grid-template-areas:"tools" "mode" "submit";align-items:center;padding:0;margin:16px 0 12px;gap:10px}
-.editor-toolbar .mode-switch{grid-area:mode;justify-self:start}
-.editor-toolbar .toolbar-actions{grid-area:tools;justify-self:center;justify-content:center}
-.editor-toolbar .editor-submit-actions{grid-area:submit;justify-self:end;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;min-width:0}
-.editor-toolbar .editor-submit-actions button{white-space:nowrap}
-@container(min-width:480px){
-  #view-problem .editor-toolbar{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"tools tools" "mode submit"}
-}
-@container(min-width:800px){
-  #view-problem .editor-toolbar{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);grid-template-areas:"mode tools submit"}
-}
+/* One editor action row; narrow panels scroll rather than stack controls. */
+#view-problem .editor-toolbar{display:grid;grid-template-columns:max-content minmax(max-content,1fr) max-content;grid-template-areas:"mode tools submit";align-items:center;padding:4px;margin:12px 0;gap:12px;min-width:0;max-width:100%;overflow-x:auto;overflow-y:hidden}
+.editor-toolbar .mode-switch{grid-area:mode;justify-self:start;white-space:nowrap}
+.editor-toolbar .toolbar-actions{grid-area:tools;justify-self:center;display:flex;flex-wrap:nowrap;align-items:center;gap:6px;white-space:nowrap}
+.editor-toolbar .editor-submit-actions{grid-area:submit;justify-self:end;display:flex;flex-wrap:nowrap;align-items:center;gap:6px;white-space:nowrap}
+#view-problem .editor-toolbar button{height:36px;min-height:36px;flex-shrink:0;white-space:nowrap}
+.editor-toolbar .button{padding:0 10px}
+.editor-toolbar .tool-button{padding:6px 10px}
 @media print{#problem-pagination{display:none!important}}
+#view-problem .editor-toolbar{gap:8px}
+#view-problem .editor-toolbar button{font-size:13px;padding-inline:8px}

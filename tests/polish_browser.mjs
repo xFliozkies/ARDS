@@ -49,11 +49,13 @@ const math=await page.evaluate(()=>{
  const target=document.createElement('div');window.ARDSStatement.render(target,{presentation_data:{description:'Synthetic constraint regression',constraints:['\\(1\\le A<B\\le10^6\\)','\\(0\\le L\\le U\\le10^{15}\\)']}});
  return {count:target.querySelectorAll('.katex').length,errors:target.querySelectorAll('.katex-error').length};
 });assert.deepEqual(math,{count:2,errors:0});
-for(const width of [375,768,1280]){
+for(const width of [375,768,1280,1920]){
  await page.setViewportSize({width,height:900});await page.waitForTimeout(100);
  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'overflow '+width);
- const toolCenter=await page.locator('.toolbar-actions').evaluate(el=>{const own=el.getBoundingClientRect(),bar=el.closest('.editor-toolbar').getBoundingClientRect();return Math.abs(own.x+own.width/2-bar.x-bar.width/2);});
- if(width>1000)assert.ok(toolCenter<2,'centered tool group');
+ if(width<=1000)await page.locator('#panel-write').click();
+ const actionCenters=await page.locator('.editor-toolbar button:not(.hidden)').evaluateAll(els=>els.filter(el=>el.getBoundingClientRect().height).map(el=>{const r=el.getBoundingClientRect();return r.y+r.height/2;}));
+ assert.ok(Math.max(...actionCenters)-Math.min(...actionCenters)<2,'one horizontal action row at '+width);
+ if(width===1920)assert.ok(await page.locator('.editor-toolbar').evaluate(el=>el.scrollWidth<=el.clientWidth),'all controls fit the screenshot desktop width');
  if(width<=1000)await page.locator('#panel-problem').click();
  await page.locator('.statement-panel').evaluate(el=>el.scrollTop=550);
  const panel=await page.locator('.statement-panel').boundingBox(),sticky=await page.locator('.statement-controls').boundingBox();
