@@ -29,7 +29,7 @@ class WebsiteTests(unittest.TestCase):
         import memory
         import hashlib
         with memory.connect(db) as con:
-            statement="# Synthetic Lantern Coverage Test\n\nGiven $N$ stall coordinates and radius $R$, compute the **minimum** number of lanterns covering all stalls.\n\n## Input\n\n- The first line contains $N$ and $R$.\n- The second line contains $N$ integer coordinates.\n\n## Constraints\n\n- $1 \\\\le N \\\\le 200000$\n- $0 \\\\le R \\\\le 10^9$\n- $0 \\\\le X_i \\\\le 10^9$\n- Lantern coordinates must be nonnegative.\n- Duplicate stalls are allowed.\n\n## Output\n\nReturn the **minimum** number of lanterns covering all stalls.\n\n## Examples\n\n**Example 1**\nInput:\n```text\n6 2\n1 2 4 7 8 12\n```\nOutput:\n```text\n3\n```\n\n**Example 2**\nInput:\n```text\n5 0\n5 1 1 7 5\n```\nOutput:\n```text\n3\n```\n\n**Example 3**\nInput:\n```text\n5 3\n0 3 6 9 12\n```\nOutput:\n```text\n2\n```\n"
+            statement="# Synthetic Lantern Coverage Test\n\nGiven $N$ stall coordinates and radius $R$, compute the **minimum** number of lanterns covering all stalls.\n\n## Input\n\n- The first line contains $N$ and $R$.\n- The second line contains $N$ integer coordinates.\n\n## Constraints\n\n- $1 \\le N \\le 200000$\n- $0 \\le R \\le 10^9$\n- $0 \\le X_i \\le 10^9$\n- Lantern coordinates must be nonnegative.\n- Duplicate stalls are allowed.\n\n## Output\n\nReturn the **minimum** number of lanterns covering all stalls.\n\n## Examples\n\n**Example 1**\nInput:\n```text\n6 2\n1 2 4 7 8 12\n```\nOutput:\n```text\n3\n```\n\n**Example 2**\nInput:\n```text\n5 0\n5 1 1 7 5\n```\nOutput:\n```text\n3\n```\n\n**Example 3**\nInput:\n```text\n5 3\n0 3 6 9 12\n```\nOutput:\n```text\n2\n```\n"
             con.execute("""
                 INSERT INTO challenges(
                     external_id,session_type,status,source,topic_id,topic_label,
@@ -107,6 +107,24 @@ class WebsiteTests(unittest.TestCase):
         self.assertEqual(json.loads(raw)['problems'],[])
         code,raw,_=self.request('/api/problems/RACG-0003')
         self.assertFalse(json.loads(raw)['has_passing_assessment'])
+
+    def test_continuation_navigation_uses_recorded_order_and_hides_private_parent(self):
+        import memory
+        with memory.connect(studio.DB) as con:
+            original=con.execute("SELECT * FROM challenges WHERE external_id='RACG-0003'").fetchone()
+            for ident,status,continuation,statement in [
+                ('UI-CONT','presented',1,original['statement']),
+                ('UI-PRIVATE-PARENT','selected',0,None),
+                ('UI-AFTER-PRIVATE','presented',1,original['statement'])]:
+                con.execute("""INSERT INTO challenges(external_id,session_type,status,source,title,statement,statement_hash,difficulty,topic_id,topic_label,continuation,created_at)
+                    VALUES (?,'RACG',?,'synthetic_test_fixture',?,?,?,?,?,?,?,?)""",
+                    (ident,status,'Synthetic navigation',statement,original['statement_hash'],2,71,'Synthetic topic',continuation,'2020-01-01'))
+        code,raw,_=self.request('/api/problems')
+        self.assertEqual(code,200)
+        rows={p['id']:p for p in json.loads(raw)['problems']}
+        self.assertEqual(rows['UI-CONT']['continuation_of'],'RACG-0003')
+        self.assertIsNone(rows['UI-AFTER-PRIVATE']['continuation_of'])
+        self.assertNotIn(b'UI-PRIVATE-PARENT',raw)
 
     def test_editor_script_is_served_locally_and_loaded_by_the_page(self):
         status,body,headers=self.request('/editor.js')

@@ -192,7 +192,6 @@
     $('scratch-notes').value=stored('ards-scratch-'+problem.id);
     $('scratch-status').textContent='';
     const nav=$('statement-nav');nav.replaceChildren();
-    nav.append(h('span','',problem.id+' · Level '+(problem.difficulty??'—')));
     for(const title of $('problem-statement').querySelectorAll('[data-statement-section]')){
       const button=h('button','tool-button',title.dataset.statementSection);
       button.type='button';

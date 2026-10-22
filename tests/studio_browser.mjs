@@ -110,7 +110,7 @@ console.log('PASS: routing/history/pagination, reviews, draft JSON, preview, con
 const emptyBase=await startFixture(0),empty=await context.newPage();await empty.goto(emptyBase+'/#/overview');
 await empty.locator('#view-overview').waitFor({state:'visible'});await empty.waitForTimeout(200);
 assert.match(await empty.locator('#overview-levels').textContent(),/No released problems/);
-assert.equal(await empty.locator('#stat-problems').textContent(),'0');
+assert.equal(await empty.locator('#sidebar-count').textContent(),'0');
 await empty.locator('#overview-levels a').click();await empty.locator('#view-guide').waitFor({state:'visible'});
 await empty.goBack();await empty.reload();await empty.locator('#view-overview').waitFor({state:'visible'});
 await empty.evaluate(axe);assert.deepEqual(await empty.evaluate(async()=> (await axe.run()).violations.filter(x=>['serious','critical'].includes(x.impact)).map(x=>({id:x.id,nodes:x.nodes.map(n=>n.target)}))),[]);

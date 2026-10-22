@@ -96,13 +96,6 @@
 
           <div class="continue-card hidden" id="continue-card"><div class="continue-text"><span class="continue-kicker">Continue where you left off</span><strong id="continue-title"></strong><span id="continue-meta" class="continue-meta"></span></div><button type="button" class="button button-primary" id="continue-open">Continue <svg class="icon"><use href="#i-arrow"></use></svg></button></div>
 
-          <div class="stats-strip" aria-label="Workspace statistics">
-            <div><span class="stat-number" id="stat-problems">—</span><span class="stat-label">Available problems</span></div>
-            <div><span class="stat-number" id="stat-attempts">—</span><span class="stat-label">Submitted PPCs</span></div>
-            <div><span class="stat-number" id="stat-assessments">—</span><span class="stat-label">Reviews</span></div>
-            <div><span class="stat-number" id="stat-drafts">—</span><span class="stat-label">Saved PPC drafts</span></div>
-          </div>
-
           <div class="library-section-head">
             <div class="filter-set" id="filter-set">
               <label class="library-search"><svg class="icon"><use href="#i-search"></use></svg><input id="library-search" type="search" placeholder="Search title, topic or ID" aria-label="Search problems by title, topic or ID" autocomplete="off"></label>
@@ -126,7 +119,7 @@
             </div>
           </div>
 
-          <div class="filter-summary"><div id="filter-chips" role="group" class="filter-chips" aria-label="Active filters"></div><span id="result-count" class="result-count" aria-live="polite"></span></div>
+          <div id="filter-summary" class="filter-summary"><div id="filter-chips" role="group" class="filter-chips" aria-label="Active filters"></div><div class="search-result-space"><span id="result-count" class="result-count" aria-live="polite"></span></div></div>
           <div class="problem-table">
             <div class="table-header"><span>CHALLENGE</span><span>TOPIC</span><span>DIFFICULTY</span><span>PROGRESS</span><span></span><span><span class="sr-only">Actions</span></span></div>
             <div id="problem-list" class="problem-items" aria-live="polite"><div class="skeleton-row" aria-label="Loading problems"></div><div class="skeleton-row" aria-hidden="true"></div><div class="skeleton-row" aria-hidden="true"></div></div>
@@ -156,37 +149,37 @@
 
       <main id="view-problem" class="page page-problem hidden">
         <div class="problem-top">
-          <button type="button" id="go-back" class="back-link"><svg class="icon"><use href="#i-chevron"></use></svg> All problems</button>
-          <div class="problem-top-right"><span class="save-indicator" id="save-status">Not saved yet</span><span class="sr-only" id="save-announce" role="status" aria-live="polite"></span><button type="button" id="toggle-focus" class="button button-outline" aria-pressed="false" title="Hide the statement and write at full width">Focus</button><button type="button" id="export-draft" class="button button-outline" title="Download this draft as Markdown">Download</button><button type="button" id="save-draft" class="button button-outline"><svg class="icon"><use href="#i-save"></use></svg> Save draft</button></div>
+          <button type="button" id="go-back" class="back-link"><svg class="icon"><use href="#i-chevron"></use></svg> Back</button>
+          <div class="problem-top-right"><span class="save-indicator" id="save-status">Not saved yet</span><span class="sr-only" id="save-announce" role="status" aria-live="polite"></span><button type="button" id="toggle-focus" class="button button-outline" aria-pressed="false" title="Hide the statement and write at full width">Focus</button><button type="button" id="export-draft" class="button button-outline" title="Download this draft as Markdown">Download</button><button type="button" id="save-draft" class="button button-outline"><svg class="icon"><use href="#i-save"></use></svg> Save draft</button></div><button type="button" id="next-problem" class="button button-outline">Next <svg class="icon"><use href="#i-arrow"></use></svg></button>
         </div>
         <div class="workspace-panel-switch" role="group" aria-label="Workspace panel"><button type="button" id="panel-problem" aria-pressed="true">Problem</button><button type="button" id="panel-write" aria-pressed="false">Write</button></div>
         <div class="problem-workspace">
           <section class="statement-panel" aria-label="Problem statement">
             <div class="statement-meta"><span class="mono-meta" id="problem-id">RACG-0000</span><span class="tag-dot">·</span><span class="mono-meta" id="problem-level">LEVEL —</span><span class="tag-dot">·</span><span class="mono-meta" id="problem-topic">ALGORITHMS</span></div>
+            <div class="statement-controls">
+            <nav id="statement-nav" class="statement-nav hidden" aria-label="Statement sections"></nav>
+            <div class="reading-controls"><button type="button" id="copy-statement" class="tool-button">Copy as Markdown</button><label>Text size <select id="reading-size"><option value="16">Default</option><option value="18">Large</option><option value="20">Larger</option></select></label><label>Line width <select id="reading-width"><option value="none">Full</option><option value="65ch">Comfortable</option></select></label></div>
+            </div>
             <h1 id="problem-title">Problem title</h1>
             <div class="statement-toolbar"><span><svg class="icon"><use href="#i-book"></use></svg> Problem statement</span><span class="label-neutral" id="problem-progress">AVAILABLE</span></div>
             <p id="problem-review-note" class="review-only-note hidden">This problem is an authored draft awaiting independent verification. You can preview it and save a private PPC draft, but formal assessment and reference reveal are unavailable until release.</p>
-            <nav id="statement-nav" class="statement-nav hidden" aria-label="Statement sections"></nav>
-            <div class="reading-controls"><button type="button" id="copy-statement" class="tool-button">Copy as Markdown</button><label>Text size <select id="reading-size"><option value="16">Default</option><option value="18">Large</option><option value="20">Larger</option></select></label><label>Line width <select id="reading-width"><option value="none">Full</option><option value="65ch">Comfortable</option></select></label></div>
             <article id="problem-statement" class="statement-content"></article>
             <div class="statement-footnote"><svg class="icon"><use href="#i-info"></use></svg> Your work is private. Completing a PPC draft does not automatically certify its correctness.</div>
           </section>
 
           <div id="workspace-divider" class="workspace-divider" role="separator" tabindex="0" aria-label="Statement width" aria-orientation="vertical" aria-valuemin="30" aria-valuemax="65" aria-valuenow="50"></div>
           <section class="editor-panel" aria-label="PPC editor">
-            <div class="editor-heading">
-              <div><div class="editor-eyebrow">PPC editor</div><h2>Write your PPC</h2><p>A rigorous solution starts with a precise statement.</p></div>
-              <button id="reveal-reference" type="button" class="button button-outline hidden" title="Reveal the reference PPC">Reveal PPC</button>
-            </div>
+            <div class="editor-eyebrow">PPC editor</div>
             <div class="editor-tabs" role="tablist" aria-label="PPC sections">
               <button type="button" role="tab" id="tab-problem" data-section="problem" aria-selected="true" aria-controls="ppc-panel" tabindex="0" class="editor-tab active"><span>01</span> Problem<i class="tab-state" aria-hidden="true"></i></button>
               <button type="button" role="tab" id="tab-procedure" data-section="procedure" aria-selected="false" aria-controls="ppc-panel" tabindex="-1" class="editor-tab"><span>02</span> Procedure<i class="tab-state" aria-hidden="true"></i></button>
               <button type="button" role="tab" id="tab-correctness" data-section="correctness" aria-selected="false" aria-controls="ppc-panel" tabindex="-1" class="editor-tab"><span>03</span> Proof<i class="tab-state" aria-hidden="true"></i></button>
               <button type="button" role="tab" id="tab-complexity" data-section="complexity" aria-selected="false" aria-controls="ppc-panel" tabindex="-1" class="editor-tab"><span>04</span> Complexity<i class="tab-state" aria-hidden="true"></i></button>
             </div>
+              <div class="editor-toolbar"><div class="mode-switch" role="group" aria-label="Editor mode"><button type="button" id="mode-write" class="mode-button active" aria-pressed="true">Write</button><button type="button" id="mode-preview" class="mode-button" aria-pressed="false">Preview</button></div><div class="toolbar-actions"><button type="button" id="insert-skeleton" class="tool-button" title="Insert an outline for this section">Insert outline</button><button type="button" id="toggle-symbols" class="tool-button" aria-expanded="false" aria-controls="symbol-palette">Symbols</button><button id="reveal-reference" type="button" class="button button-outline hidden" title="Reveal the reference PPC">Reveal PPC</button></div></div>
             <div class="writing-area" id="ppc-panel" role="tabpanel" aria-labelledby="tab-problem">
-              <div class="writing-head"><div><span class="section-kicker" id="section-kicker">P1 · FORMALIZATION</span><h3 id="section-title">Problem specification</h3><p id="section-description">Define inputs, assumptions, and the exact output relation.</p></div><button id="editor-open-guide" type="button" class="editor-guide-link"><svg class="icon"><use href="#i-book"></use></svg> Explain this section <span aria-hidden="true">↗</span></button></div>
-              <div class="editor-toolbar"><div class="mode-switch" role="group" aria-label="Editor mode"><button type="button" id="mode-write" class="mode-button active" aria-pressed="true">Write</button><button type="button" id="mode-preview" class="mode-button" aria-pressed="false">Preview</button></div><div class="toolbar-actions"><button type="button" id="insert-skeleton" class="tool-button" title="Insert an outline for this section">Insert outline</button><button type="button" id="toggle-symbols" class="tool-button" aria-expanded="false" aria-controls="symbol-palette">Symbols</button></div></div>
+              <div class="writing-head"><div><h3 id="section-title">Problem specification</h3><p id="section-description">Define inputs, assumptions, and the exact output relation.</p></div><button id="editor-open-guide" type="button" class="editor-guide-link"><svg class="icon"><use href="#i-book"></use></svg> Explain this section <span aria-hidden="true">↗</span></button></div>
+
               <div id="symbol-palette" class="symbol-palette hidden" role="group" aria-label="Insert a symbol"></div>
               <label class="sr-only" for="ppc-input">Your reasoning for this PPC section</label>
               <textarea id="ppc-input" spellcheck="true" placeholder="Begin by specifying the mathematical problem..." rows="17"></textarea>

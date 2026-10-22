@@ -180,6 +180,7 @@
  }
  function formulaConstraint(line){
    const t=String(line).trim();
+   if(/^(?:\\\(|\\\[|\$)/.test(t))return rich(t);
    const looksMath=/[<>=≤≥]/.test(t)&&/^[0-9A-Za-z_\s,.\-\+\^()[\]{}|<>=≤≥*\/\\]+$/.test(t);
    if(!looksMath)return rich(t);
    const cleaned=t.replace(/<=|≤/g,'\\leq ').replace(/>=|≥/g,'\\geq ')

@@ -24,3 +24,17 @@ test('lifecycle distinguishes server status from progress',()=>{
  assert.deepEqual(logic.lifecycleParam('progress:revealed'),['progress','revealed']);
  assert.equal(logic.lifecycleParam('teacher:proof'),null);
 });
+test('next browsing uses 30/40/30 pools and renormalizes missing choices',()=>{
+ const current={id:'A',topic_id:7};
+ const rows=[current,{id:'B',topic_id:7,continuation_of:'A'},{id:'C',topic_id:7},{id:'D',topic_id:8}];
+ const choose=(rows,roll,index=0)=>{let calls=0;return logic.pickNextProblem(rows,current,()=>calls++===0?roll:index);};
+ assert.equal(choose(rows,0.29).id,'B');
+ assert.equal(choose(rows,0.30,0.99).id,'C');
+ assert.equal(choose(rows,0.69,0.99).id,'C');
+ assert.equal(choose(rows,0.70,0.99).id,'D');
+ const noContinuation=rows.filter(p=>p.id!=='B');
+ assert.equal(choose(noContinuation,0.56).id,'C');
+ assert.equal(choose(noContinuation,0.58,0.99).id,'D');
+ assert.equal(choose([current,{id:'D',topic_id:8}],0).id,'D');
+ assert.equal(choose([current],0),null);
+});

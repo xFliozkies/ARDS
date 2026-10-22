@@ -87,7 +87,11 @@ def list_problems(search="", difficulty="", status="", limit=250, topic="", fami
     with database() as con:
         query = """
           WITH candidates AS (
-            SELECT c.*,rp.primary_pattern,e.edition,e.assurance AS edition_assurance,
+            SELECT c.*,
+                   CASE WHEN c.continuation=1 THEN (SELECT CASE WHEN prior.statement IS NOT NULL THEN prior.external_id END
+                     FROM challenges prior WHERE prior.id<c.id AND prior.session_type='RACG'
+                     AND prior.status!='abandoned' ORDER BY prior.id DESC LIMIT 1) END AS continuation_of,
+                   rp.primary_pattern,e.edition,e.assurance AS edition_assurance,
                    e.statement AS edition_statement,
                    e.package_json AS edition_body,
                    pub.body_json AS published_body,pub.revision AS published_revision,
@@ -115,7 +119,7 @@ def list_problems(search="", difficulty="", status="", limit=250, topic="", fami
                    CASE WHEN review_only=1 THEN json_extract(draft_body,'$.title')
                         ELSE COALESCE(json_extract(edition_body,'$.title'),json_extract(published_body,'$.title'),title) END AS title,
                    CASE WHEN review_only=1 THEN 'under_review' ELSE status END AS status,
-                   difficulty,topic_id,topic_label,presentation,session_type,created_at,
+                   difficulty,topic_id,topic_label,presentation,session_type,created_at,continuation_of,
                    CASE WHEN review_only=1
                         THEN COALESCE(json_extract(draft_body,'$.model.family'),'')
                         ELSE COALESCE(json_extract(edition_body,'$.model.family'),json_extract(published_body,'$.model.family'),'') END AS family,

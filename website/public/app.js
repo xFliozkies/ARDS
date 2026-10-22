@@ -57,10 +57,6 @@ function switchView(name){
   window.scrollTo({top:0,behavior:'instant'});
 }
 function refreshStats(stats){
-  $('stat-problems').textContent=stats.published;
-  $('stat-attempts').textContent=stats.attempts;
-  $('stat-assessments').textContent=stats.assessments;
-  $('stat-drafts').textContent=stats.drafts;
   $('sidebar-count').textContent=stats.published;
   $('overview-details').innerHTML=[
     ['Authored problems (including private review queue)',stats.authored],
@@ -183,7 +179,10 @@ async function loadProblems(search='',{resetPage=false,scrollToList=false}={}){
   state.pages=data.pages;
   state.total=data.total;
   renderProblems();saveLibraryState();
-  $('result-count').textContent=data.total+' matching problems';
+  const searching=Boolean(state.search.trim());
+  $('result-count').textContent=searching?data.total+' matching problems':'';
+  $('result-count').classList.toggle('has-results',searching);
+  $('filter-summary')?.classList.toggle('has-search',searching);
   if(scrollToList && state.view==='library')document.querySelector('.problem-table').scrollIntoView({block:'start',behavior:'instant'});
 }
 async function loadFacets(){
@@ -459,7 +458,6 @@ function showSection(section,{skipPreserve=false}={}){
   if(!skipPreserve)preserveText();
   state.section=section;
   const meta=META[section];
-  $('section-kicker').textContent=meta.kicker;
   $('section-title').textContent=meta.title;
   $('section-description').textContent=meta.description;
   $('ppc-input').placeholder=meta.placeholder;
@@ -483,7 +481,7 @@ function showSection(section,{skipPreserve=false}={}){
   $('submit-ppc').disabled=Boolean(state.current?.review_only)||!allFilled();
 }
 async function openProblem(id,{fromRoute=false}={}){
-  if(!fromRoute){state.problemOrigin=state.view==='drafts'?'drafts':'library';try{sessionStorage.setItem('ards-problem-origin',state.problemOrigin);}catch{}rememberLibraryScroll();navigate('#/problem/'+encodeURIComponent(id));return;}
+  if(!fromRoute){state.problemOrigin=state.view==='problem'?(state.problemOrigin||'drafts'):state.view==='drafts'?'drafts':'library';try{sessionStorage.setItem('ards-problem-origin',state.problemOrigin);}catch{}rememberLibraryScroll();navigate('#/problem/'+encodeURIComponent(id));return;}
   try{state.problemOrigin=sessionStorage.getItem('ards-problem-origin')||'library';}catch{}
   const request=++problemOpenRequest;
   $('workspace-loading').classList.remove('hidden');
@@ -707,7 +705,8 @@ function bind(){
   $('nav-overview').addEventListener('click',()=>navigate('#/overview'));
   $('nav-method').addEventListener('click',()=>navigate('#/method/start'));
   $('learn-ppc').addEventListener('click',()=>$('nav-method').click());
-  $('go-back').addEventListener('click',goLibrary);
+  $('go-back').addEventListener('click',()=>navigate('#/drafts'));
+  $('next-problem').addEventListener('click',nextProblem);
   $('editor-open-guide').addEventListener('click',()=>window.ARDSUI.explain(state.section).catch(err=>notify(err.message,true)));
   $('overview-back').addEventListener('click',goLibrary);
   $('filter-level').addEventListener('change',()=>loadProblems('',{resetPage:true}).catch(err=>notify(err.message,true)));
@@ -823,6 +822,16 @@ async function route(){
     if(version===routeRequest)window.scrollTo({top:state.libraryScroll||0,behavior:'instant'});
     if(route.invalid)notify('Unknown page. Showing the problem library.');
   }
+}
+async function nextProblem(){
+  const button=$('next-problem');if(button.disabled||!state.current)return;button.disabled=true;
+  try{
+    const rows=await allPublicProblems();
+    const picked=window.ARDSLogic.pickNextProblem(rows,state.current);
+    if(!picked){notify('There are no other released problems yet.');return;}
+    await saveDraft(true);openProblem(picked.id);
+  }catch(err){notify('Could not open the next problem: '+err.message,true);}
+  finally{button.disabled=false;}
 }
 async function allPublicProblems(){
   let rows=[],page=1;

@@ -171,3 +171,40 @@ node tests/studio_browser.mjs
 
 Restart the user's existing Python server and hard-refresh for the new static
 route and review endpoint. The agent only started disposable fixture servers.
+
+## Screenshot refinement checkpoint — 2026-10-22
+
+Implemented the learner's fourteen screenshot requests: a single search outline
+and equal 44px library control heights; removed the four-number stats strip;
+search counts appear only for nonblank search and animate table displacement;
+Back opens My PPC workspace; removed duplicate ID/level; moved statement jump
+and reading controls above the title, sticky at the scrollport edge with a
+progressively stronger blur toward the top; styled reading selects consistently;
+removed the requested editor hero/kicker copy; moved editor actions above the
+white writing card with Reveal immediately after Symbols; centered save actions
+and added Next on the right. Narrow screens wrap the centered group into its own
+row. Motion respects the existing reduced-motion rule.
+
+Constraint rendering now routes explicit LaTeX delimiters through rich rendering
+instead of feeding delimiters into the bare-formula adapter. The exact
+`\(1\le A<B\le10^6\)` case is browser checked. No canonical statement changed.
+The synthetic website fixture's accidentally doubled TeX backslashes were also
+corrected so screenshot verification uses valid test notation.
+
+Next browses existing released problems only; it never draws/registers a new
+RACG challenge. It samples continuation/same-topic/all-other-problems pools at
+30/40/30. Missing pools are omitted and weights renormalized: without a
+continuation, same-topic/random is 40/70 versus 30/70. Continuations use recorded
+`continuation=1` and the preceding RACG record in draw order; private preceding
+records yield null rather than exposing an ID or skipping to an unrelated public
+parent. The current problem is excluded. Server-side session/origin/reveal
+protections remain intact.
+
+Observed: 168 Python tests OK (one skipped), 13 Node tests passed, full 15-view
+responsive screenshot/axe suite passed, and `tests/polish_browser.mjs` passed at
+375/768/1280px. The focused suite verifies geometry, search animation, label/action
+placement, proper KaTeX, top-edge sticking, Back, and Next. It owns synthetic
+temporary fixtures when no URL is supplied, using the same Playwright/browser env
+settings as the full suite. Screenshots: `/tmp/ards-polish-library.png` and
+`/tmp/ards-polish-problem-{375,768,1280}.png`. Production DBs were not modified.
+Restart the Python server for the new continuation metadata, then hard-refresh.

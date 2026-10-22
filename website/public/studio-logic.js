@@ -161,7 +161,21 @@
     }))},null,2);
   }
 
-  const api={SECTIONS,LEVELS,parseRoute,hashFor,lifecycleParam,LIFECYCLE_OPTIONS,lifecycleLabel,topicLabels,familyLabel,
+  // Browse existing released problems only. This is not a new RACG draw.
+  function pickNextProblem(problems,current,random=Math.random){
+    const others=(problems||[]).filter(p=>p.id!==current.id);
+    if(!others.length)return null;
+    const continuation=others.filter(p=>p.continuation_of===current.id);
+    const sameTopic=others.filter(p=>current.topic_id!=null&&p.topic_id===current.topic_id);
+    const choices=[[continuation,30],[sameTopic,40],[others,30]].filter(([pool])=>pool.length);
+    const total=choices.reduce((n,[,weight])=>n+weight,0);
+    let roll=random()*total;
+    let pool=choices[choices.length-1][0];
+    for(const [candidate,weight] of choices){if(roll<weight){pool=candidate;break;}roll-=weight;}
+    return pool[Math.min(pool.length-1,Math.floor(random()*pool.length))];
+  }
+
+  const api={pickNextProblem,SECTIONS,LEVELS,parseRoute,hashFor,lifecycleParam,LIFECYCLE_OPTIONS,lifecycleLabel,topicLabels,familyLabel,
     levelPips,clampSplit,highlightParts,rememberRecent,progressSummary,fenceFor,statementMarkdown,draftMarkdown,draftsJson,SECTION_LABELS};
   if(typeof window!=='undefined')window.ARDSLogic=api;
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
