@@ -458,6 +458,7 @@ function showSection(section,{skipPreserve=false}={}){
   $('section-description').textContent=meta.description;
   $('ppc-input').placeholder=meta.placeholder;
   $('ppc-input').value=state.draft?.[section]||'';
+  $('self-check-questions').replaceChildren(...SECTION_PROMPTS[section].map(text=>{const li=document.createElement('li');li.textContent=text;return li;}));
   updateCharCount();
   document.querySelectorAll('.editor-tab').forEach(btn=>{
     const active=btn.dataset.section===section;
@@ -487,6 +488,7 @@ async function openProblem(id){
     $('problem-topic').textContent=String(problem.topic_label||'GENERAL').toUpperCase();
     $('problem-title').textContent=problem.title;
     window.ARDSUI.renderStatement($('problem-statement'),problem);
+    window.ARDSUI.setupWorkspace(problem);
     $('reference-exclusion')?.classList?.add('hidden');
     $('problem-progress').textContent=statusFor(problem).label.toUpperCase();
     $('problem-review-note').classList.toggle('hidden',!problem.review_only);
@@ -666,6 +668,17 @@ async function renderCommandResults(query){
 }
 function bind(){
   bindSimilarPicker();
+  window.ARDSUI.bindWorkspace();
+  document.addEventListener('keydown',e=>{
+    if(e.altKey&&/^[1-4]$/.test(e.key)&&state.view==='problem'){
+      e.preventDefault();showSection(SECTIONS[Number(e.key)-1]);$('ppc-input').focus();
+    }
+    if(e.key==='?'&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!e.target.closest('input,textarea,select,[contenteditable]')){
+      const content=document.createElement('p');
+      content.textContent='Ctrl+K or /: search. Ctrl+S: save draft. Alt+1–4: switch PPC section. Escape then Tab: leave the editor. Arrow keys: resize the focused divider. ? : show shortcuts.';
+      window.ARDSUI.openModal('Keyboard shortcuts','',content);
+    }
+  });
   $('nav-library').addEventListener('click',goLibrary);
   $('nav-drafts').addEventListener('click',()=>state.lastSelected?openProblem(state.lastSelected):notify('Open a problem to start your PPC draft.'));
   $('nav-overview').addEventListener('click',()=>{switchView('overview');history.replaceState(null,'','#/overview');loadOverview();});

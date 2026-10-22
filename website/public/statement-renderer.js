@@ -186,13 +186,22 @@
        .replace(/(?<=\d),(?=\d{3}(?:\D|$))/g,'{,}');
    return mathMarkup(cleaned,false);
  }
- function sampleCard(name,value){
+ function sampleCard(name,value,index){
    const box=el('section','sample-card');
-   box.append(el('div','sample-card-title',name),el('pre','sample-code',value));
+   const title=el('div','sample-card-title',name);
+   const copy=el('button','tool-button','Copy');copy.type='button';
+   copy.setAttribute('aria-label','Copy sample '+(index+1)+' '+name.toLowerCase());
+   copy.addEventListener('click',async()=>{
+     try{await navigator.clipboard.writeText(String(value));copy.textContent='Copied';}
+     catch{copy.textContent='Copy failed';}
+     setTimeout(()=>{copy.textContent='Copy';},1800);
+   });
+   title.append(copy);box.append(title,el('pre','sample-code',value));
    return box;
  }
  function heading(parent,name){
-   parent.append(el('h3','statement-section-title',name));
+   const title=el('h3','statement-section-title',name);
+   title.dataset.statementSection=name;parent.append(title);
  }
  function render(container,detail){
    const source=detail.presentation_data||{};
@@ -228,7 +237,7 @@
    for(const [index,s] of data.samples.entries()){
      heading(container,'Sample '+(index+1)+':');
      const group=el('div','sample-grid');
-     group.append(sampleCard('Input',s.input),sampleCard('Output',s.output));
+     group.append(sampleCard('Input',s.input,index),sampleCard('Output',s.output,index));
      container.append(group);
    }
  }

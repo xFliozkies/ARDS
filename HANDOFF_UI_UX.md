@@ -76,3 +76,34 @@ No real-browser run of anything built so far. Specifically unverified: Write/Pre
 ## 8. Starter prompt to give the new AI
 
 > You are continuing a UI/UX implementation in `~/MyFiles/AI/ARDS` (a local, light-only, offline algorithm-practice website in `website/public/`). Read, in order: `ARDS_Studio_UI_UX_Implementation_Spec.md`, `AGENTS.md`, `README.md`, then `HANDOFF_UI_UX.md`. Constraints in spec section 1 override everything; never touch `data/*.db` or run `reset_ards.py`. Check `git log` and the handoff status table, run the baseline tests in handoff section 5, then continue with the next package in the recommended order (WP5 + WP4). Restart the local server after any `server.py` change. Commit after each package, run the completion checks in spec section 6, and report only checks you actually observed. Ask me only the owner questions in handoff section 7 that actually block you.
+
+## Continuation checkpoint — WP5 (2026-10-22)
+
+WP5 is implemented in `app.js`, `workspace-ui.js`, `statement-renderer.js`,
+`index.html`, and `workspace.css`: exact sample copy, sticky section navigation,
+keyboard/pointer split (30–65%, persisted), existing Focus mode, narrow Problem /
+Write switching, persisted reading size/width, student-only Markdown copy,
+browser-only per-problem scratch notes (never submitted), self-check questions,
+and Alt+1–4 / shortcut dialog. Scratch storage failures show an explicit message.
+Mobile PPC tabs now wrap into two rows rather than clipping the fourth section.
+No API or canonical data changes. The pre-existing untracked `studio-logic.js`
+was preserved and is not loaded or changed by this package.
+
+Observed baseline and post-change suite: 165 Python tests OK (one skipped), 8 editor tests passed.
+Browser checks used a temporary Playwright installation in `/tmp/ards-ui-check`
+and the already cached Chromium; no browser downloaded. The synthetic disposable
+website fixture was used at 375, 768 and 1280px. Checks passed for mobile panel/text
+preservation, no page horizontal overflow, divider keyboard adjustment, scratch
+persistence, self-check list, byte-exact sample clipboard content, statement
+Markdown copy, draft save/reload, no page errors and no external requests.
+Screenshots are temporary under `/tmp/ards-ui-check/`. Screenshot inspection found
+and corrected desktop footer overlap and narrow tab clipping.
+
+Repeat browser checks: start `python3 tests/workspace_fixture.py`, then set
+`ARDS_UI_TEST_URL` to the printed URL and run `node tests/workspace_browser.mjs`.
+If Playwright is outside normal module resolution, set `ARDS_PLAYWRIGHT_MODULE`
+to its `index.mjs`; set `ARDS_CHROMIUM_PATH` to the cached executable if needed.
+Optional `ARDS_SCREENSHOT_DIR` selects an existing screenshot directory.
+This is a WP5 smoke test, not the complete WP10/axe suite. Full keyboard-only
+walkthrough and axe remain outstanding. Routing (WP4), library (WP3), overview,
+assessment/reveal, microcopy, remaining WP6 and WP10 still need implementation.

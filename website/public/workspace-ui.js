@@ -164,7 +164,90 @@
     else if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}
     else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
   }
-  window.ARDSUI={init,renderStatement,preview,explain,confirmReveal,showReference,closeModal,openModal,trapTab};
+  let workspaceProblem=null;
+  function stored(key,fallback=''){
+    try{return localStorage.getItem(key)??fallback;}catch{return fallback;}
+  }
+  function remember(key,value){
+    try{localStorage.setItem(key,value);return true;}catch{return false;}
+  }
+  function setupWorkspace(problem){
+    workspaceProblem=problem;
+    $('scratch-notes').value=stored('ards-scratch-'+problem.id);
+    $('scratch-status').textContent='';
+    const nav=$('statement-nav');nav.replaceChildren();
+    nav.append(h('span','',problem.id+' · Level '+(problem.difficulty??'—')));
+    for(const title of $('problem-statement').querySelectorAll('[data-statement-section]')){
+      const button=h('button','tool-button',title.dataset.statementSection);
+      button.type='button';
+      button.addEventListener('click',()=>title.scrollIntoView({block:'start',behavior:'instant'}));
+      nav.append(button);
+    }
+    nav.classList.remove('hidden');
+    $('panel-problem').click();
+  }
+  function statementMarkdown(problem){
+    const d=problem.presentation_data||{};
+    const parts=['# '+(problem.title||problem.id),'',d.description||problem.statement||'',''];
+    for(const [key,title] of [['input_format','Input Format'],['output_format','Output Format']]){
+      if(d[key])parts.push('## '+title,'',d[key],'');
+    }
+    if(d.constraints?.length)parts.push('## Constraints','',...d.constraints.map(x=>'- '+x),'');
+    for(const [i,sample] of (d.samples||[]).entries()){
+      parts.push('## Sample '+(i+1),'');
+      for(const [key,label] of [['input','Input'],['output','Output']]){
+        const text=String(sample[key]??'');
+        const fence='`'.repeat(Math.max(2,...(text.match(/`+/g)||[]).map(x=>x.length))+1);
+        parts.push('### '+label,'',fence+'text',text,fence,'');
+      }
+    }
+    return parts.join('\n');
+  }
+  function bindWorkspace(){
+    const view=$('view-problem'),divider=$('workspace-divider');
+    const setSplit=value=>{
+      const n=Number(value),ratio=Number.isFinite(n)?Math.min(65,Math.max(30,n)):50;
+      view.style.setProperty('--statement-ratio',ratio+'%');
+      divider.setAttribute('aria-valuenow',String(Math.round(ratio)));
+      remember('ards-statement-ratio',String(ratio));
+    };
+    setSplit(stored('ards-statement-ratio','50'));
+    divider.addEventListener('keydown',e=>{
+      if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;
+      e.preventDefault();
+      setSplit(e.key==='Home'?30:e.key==='End'?65:Number(divider.getAttribute('aria-valuenow'))+(e.key==='ArrowLeft'?-2:2));
+    });
+    divider.addEventListener('pointerdown',e=>{if(e.button===0){divider.setPointerCapture(e.pointerId);e.preventDefault();divider.focus();}});
+    divider.addEventListener('pointermove',e=>{
+      if(!divider.hasPointerCapture(e.pointerId))return;
+      const rect=divider.parentElement.getBoundingClientRect();setSplit((e.clientX-rect.left)/rect.width*100);
+    });
+    divider.addEventListener('pointerup',e=>{if(divider.hasPointerCapture(e.pointerId))divider.releasePointerCapture(e.pointerId);});
+    for(const panel of ['problem','write'])$('panel-'+panel).addEventListener('click',()=>{
+      view.dataset.panel=panel;
+      for(const name of ['problem','write'])$('panel-'+name).setAttribute('aria-pressed',String(name===panel));
+    });
+    for(const [id,css,allowed] of [['reading-size','--reading-size',['16','18','20']],['reading-width','--reading-width',['none','65ch']]]){
+      const control=$(id),apply=()=>{
+        if(!allowed.includes(control.value))control.value=allowed[0];
+        view.style.setProperty(css,control.value+(id==='reading-size'?'px':''));remember('ards-'+id,control.value);
+      };
+      control.value=stored('ards-'+id,allowed[0]);apply();control.addEventListener('change',apply);
+    }
+    $('scratch-notes').addEventListener('input',()=>{
+      if(workspaceProblem)$('scratch-status').textContent=remember('ards-scratch-'+workspaceProblem.id,$('scratch-notes').value)?'Saved in this browser':'Could not save notes. Copy them before leaving.';
+    });
+    $('self-check').open=stored('ards-self-check')==='1';
+    $('self-check').addEventListener('toggle',()=>remember('ards-self-check',$('self-check').open?'1':'0'));
+    $('copy-statement').addEventListener('click',async()=>{
+      if(!workspaceProblem)return;
+      try{await navigator.clipboard.writeText(statementMarkdown(workspaceProblem));$('copy-statement').textContent='Copied';}
+      catch{$('copy-statement').textContent='Copy failed';}
+      setTimeout(()=>{$('copy-statement').textContent='Copy as Markdown';},1800);
+    });
+  }
+
+  window.ARDSUI={setupWorkspace,bindWorkspace,init,renderStatement,preview,explain,confirmReveal,showReference,closeModal,openModal,trapTab};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);
   else init();
 })();
