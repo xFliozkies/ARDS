@@ -208,3 +208,22 @@ temporary fixtures when no URL is supplied, using the same Playwright/browser en
 settings as the full suite. Screenshots: `/tmp/ards-polish-library.png` and
 `/tmp/ards-polish-problem-{375,768,1280}.png`. Production DBs were not modified.
 Restart the Python server for the new continuation metadata, then hard-refresh.
+
+## Pagination and toolbar follow-up — 2026-10-22
+
+Moved the existing pagination summary, page-size and page buttons below filters
+and above the table. Removed the duplicate search-text chip (the search input
+already provides editing/clearing) and placed remaining filter chips and animated
+result feedback in one compact wrapping row. Counts remain hidden for empty
+search, with reduced-motion support unchanged.
+
+Centered Insert outline / Symbols / Reveal within the editor toolbar; moved the
+existing Next section and Submit buttons from the footer to its right action
+group. All IDs/listeners and the confirmation/attestation behavior are unchanged.
+Container queries wrap groups on smaller panels without clipping; wide panels
+use left mode, centered tools, and right submission controls.
+
+Observed checks: 22 website tests OK (one skipped), six static accessibility tests
+passed, targeted polish browser geometry checks passed, and the full responsive
+browser/axe suite passed at 375/768/1280px. Existing private-data, reveal, recovery
+and export checks passed. No server or database changes in this follow-up.

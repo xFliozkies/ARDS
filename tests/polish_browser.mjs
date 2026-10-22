@@ -16,6 +16,8 @@ const page=await browser.newPage({viewport:{width:1280,height:900}}),errors=[];p
 await page.goto(base);await page.locator('.problem-item').first().waitFor();
 assert.match(await page.locator('.problem-item').first().textContent(),/Synthetic UI/);
 assert.equal(await page.locator('.stats-strip').count(),0);
+const libraryOrder=await page.evaluate(()=>['filter-set','problem-pagination','problem-list'].map(id=>document.getElementById(id).getBoundingClientRect().top));
+assert.ok(libraryOrder[0]<libraryOrder[1]&&libraryOrder[1]<libraryOrder[2],'pagination between filters and table');
 assert.equal(await page.locator('#result-count').textContent(),'');
 assert.equal(await page.locator('#library-search').evaluate(el=>getComputedStyle(el).borderTopWidth),'0px');
 const heights=await page.locator('#filter-set > .library-search, #filter-set > .select-wrap:not(.hidden), #filter-set > button').evaluateAll(els=>els.filter(el=>getComputedStyle(el).display!=='none').map(el=>el.getBoundingClientRect().height));
@@ -23,6 +25,9 @@ assert.equal(new Set(heights).size,1);
 const initialTop=await page.locator('.problem-table').evaluate(el=>el.getBoundingClientRect().top);
 await page.locator('#library-search').fill('Synthetic');await page.waitForTimeout(650);
 assert.match(await page.locator('#result-count').textContent(),/matching problems/);
+assert.equal(await page.locator('#filter-chips').textContent(),'','search does not duplicate input as a chip');
+const feedbackHeight=await page.locator('#filter-summary').evaluate(el=>el.getBoundingClientRect().height);
+assert.ok(feedbackHeight<=40,'compact search feedback');
 assert.ok(await page.locator('.problem-table').evaluate(el=>el.getBoundingClientRect().top)>initialTop);
 assert.notEqual(await page.locator('.search-result-space').evaluate(el=>getComputedStyle(el).transitionDuration),'0s');
 await page.locator('#library-search').fill('');await page.waitForTimeout(650);assert.equal(await page.locator('#result-count').textContent(),'');
@@ -33,6 +38,8 @@ assert.equal(await page.locator('#go-back').innerText(),'Back');
 assert.equal(await page.locator('.editor-heading,#section-kicker').count(),0);
 assert.equal(await page.locator('#reveal-reference').evaluate(el=>el.parentElement.lastElementChild===el),true);
 assert.equal(await page.locator('.editor-toolbar').evaluate(el=>!!el.closest('.writing-area')),false);
+assert.equal(await page.locator('#submit-ppc').evaluate(el=>!!el.closest('.editor-submit-actions')),true);
+assert.equal(await page.locator('#next-section').evaluate(el=>!!el.closest('.editor-submit-actions')),true);
 assert.equal(await page.locator('#statement-nav > span').count(),0);
 const rects=await page.evaluate(()=>Object.fromEntries(['problem-title','statement-nav','copy-statement'].map(id=>[id,document.getElementById(id).getBoundingClientRect().top])));
 assert.ok(rects['statement-nav']<rects['problem-title']&&rects['copy-statement']<rects['problem-title']);
@@ -45,6 +52,8 @@ const math=await page.evaluate(()=>{
 for(const width of [375,768,1280]){
  await page.setViewportSize({width,height:900});await page.waitForTimeout(100);
  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'overflow '+width);
+ const toolCenter=await page.locator('.toolbar-actions').evaluate(el=>{const own=el.getBoundingClientRect(),bar=el.closest('.editor-toolbar').getBoundingClientRect();return Math.abs(own.x+own.width/2-bar.x-bar.width/2);});
+ if(width>1000)assert.ok(toolCenter<2,'centered tool group');
  if(width<=1000)await page.locator('#panel-problem').click();
  await page.locator('.statement-panel').evaluate(el=>el.scrollTop=550);
  const panel=await page.locator('.statement-panel').boundingBox(),sticky=await page.locator('.statement-controls').boundingBox();

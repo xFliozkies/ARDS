@@ -120,10 +120,6 @@
           </div>
 
           <div id="filter-summary" class="filter-summary"><div id="filter-chips" role="group" class="filter-chips" aria-label="Active filters"></div><div class="search-result-space"><span id="result-count" class="result-count" aria-live="polite"></span></div></div>
-          <div class="problem-table">
-            <div class="table-header"><span>CHALLENGE</span><span>TOPIC</span><span>DIFFICULTY</span><span>PROGRESS</span><span></span><span><span class="sr-only">Actions</span></span></div>
-            <div id="problem-list" class="problem-items" aria-live="polite"><div class="skeleton-row" aria-label="Loading problems"></div><div class="skeleton-row" aria-hidden="true"></div><div class="skeleton-row" aria-hidden="true"></div></div>
-          </div>
           <nav id="problem-pagination" class="problem-pagination" aria-label="Problem pages">
             <span id="pagination-summary" class="pagination-summary" aria-live="polite"></span>
             <div class="pagination-controls">
@@ -133,6 +129,11 @@
               <button id="page-next" type="button" class="pagination-arrow" aria-label="Next page">›</button>
             </div>
           </nav>
+          <div class="problem-table">
+            <div class="table-header"><span>CHALLENGE</span><span>TOPIC</span><span>DIFFICULTY</span><span>PROGRESS</span><span></span><span><span class="sr-only">Actions</span></span></div>
+            <div id="problem-list" class="problem-items" aria-live="polite"><div class="skeleton-row" aria-label="Loading problems"></div><div class="skeleton-row" aria-hidden="true"></div><div class="skeleton-row" aria-hidden="true"></div></div>
+          </div>
+
 
           <div class="under-grid">
             <section class="field-note">
@@ -176,7 +177,7 @@
               <button type="button" role="tab" id="tab-correctness" data-section="correctness" aria-selected="false" aria-controls="ppc-panel" tabindex="-1" class="editor-tab"><span>03</span> Proof<i class="tab-state" aria-hidden="true"></i></button>
               <button type="button" role="tab" id="tab-complexity" data-section="complexity" aria-selected="false" aria-controls="ppc-panel" tabindex="-1" class="editor-tab"><span>04</span> Complexity<i class="tab-state" aria-hidden="true"></i></button>
             </div>
-              <div class="editor-toolbar"><div class="mode-switch" role="group" aria-label="Editor mode"><button type="button" id="mode-write" class="mode-button active" aria-pressed="true">Write</button><button type="button" id="mode-preview" class="mode-button" aria-pressed="false">Preview</button></div><div class="toolbar-actions"><button type="button" id="insert-skeleton" class="tool-button" title="Insert an outline for this section">Insert outline</button><button type="button" id="toggle-symbols" class="tool-button" aria-expanded="false" aria-controls="symbol-palette">Symbols</button><button id="reveal-reference" type="button" class="button button-outline hidden" title="Reveal the reference PPC">Reveal PPC</button></div></div>
+              <div class="editor-toolbar"><div class="mode-switch" role="group" aria-label="Editor mode"><button type="button" id="mode-write" class="mode-button active" aria-pressed="true">Write</button><button type="button" id="mode-preview" class="mode-button" aria-pressed="false">Preview</button></div><div class="toolbar-actions"><button type="button" id="insert-skeleton" class="tool-button" title="Insert an outline for this section">Insert outline</button><button type="button" id="toggle-symbols" class="tool-button" aria-expanded="false" aria-controls="symbol-palette">Symbols</button><button id="reveal-reference" type="button" class="button button-outline hidden" title="Reveal the reference PPC">Reveal PPC</button></div><div class="editor-submit-actions"><button id="next-section" type="button" class="button button-outline">Next section <svg class="icon"><use href="#i-arrow"></use></svg></button><button id="submit-ppc" type="button" class="button button-primary">Submit PPC <svg class="icon"><use href="#i-arrow"></use></svg></button></div></div>
             <div class="writing-area" id="ppc-panel" role="tabpanel" aria-labelledby="tab-problem">
               <div class="writing-head"><div><h3 id="section-title">Problem specification</h3><p id="section-description">Define inputs, assumptions, and the exact output relation.</p></div><button id="editor-open-guide" type="button" class="editor-guide-link"><svg class="icon"><use href="#i-book"></use></svg> Explain this section <span aria-hidden="true">↗</span></button></div>
 
@@ -191,7 +192,7 @@
             <section id="assessment-panel" class="workspace-notes" aria-label="Recorded reviews"></section>
             <div class="editor-footer">
               <div class="editor-tips"><svg class="icon"><use href="#i-info"></use></svg> Every section is preserved as you work.</div>
-              <div class="footer-actions"><label class="independent-attestation"><input id="independent-attest" type="checkbox"> Independent, without hints</label><button id="next-section" type="button" class="button button-outline">Next section <svg class="icon"><use href="#i-arrow"></use></svg></button><button id="submit-ppc" type="button" class="button button-primary">Submit PPC <svg class="icon"><use href="#i-arrow"></use></svg></button></div>
+              <div class="footer-actions"><label class="independent-attestation"><input id="independent-attest" type="checkbox"> Independent, without hints</label></div>
             </div>
           </section>
         </div>

@@ -887,7 +887,6 @@ function renderFilterChips(){
     chip(label,()=>{el.value=id==='filter-sort'?'newest':'';syncSimilarSelection();reload();});
     if(['filter-topic','filter-family','filter-presentation','filter-similar'].includes(id))count++;
   }
-  if(state.search)chip('Search: '+state.search,()=>{state.search='';$('library-search').value='';reload();});
   if(root.childElementCount){const b=document.createElement('button');b.type='button';b.className='tool-button';b.textContent='Clear all';b.addEventListener('click',()=>{for(const id of FILTER_IDS)$(id).value=id==='filter-sort'?'newest':'';state.search='';$('library-search').value='';syncSimilarSelection();reload();});root.append(b);}
   $('more-filters-count').hidden=!count;$('more-filters-count').textContent=String(count);
 }
