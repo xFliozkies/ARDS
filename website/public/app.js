@@ -828,7 +828,7 @@ async function nextProblem(){
   try{
     const rows=await allPublicProblems();
     const picked=window.ARDSLogic.pickNextProblem(rows,state.current);
-    if(!picked){notify('There are no other released problems yet.');return;}
+    if(!picked){notify('No other released problems with an unviewed reference are available.');return;}
     await saveDraft(true);openProblem(picked.id);
   }catch(err){notify('Could not open the next problem: '+err.message,true);}
   finally{button.disabled=false;}

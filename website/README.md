@@ -235,7 +235,8 @@ Creating that set must not automatically resolve `RACG-0003`.
 
 The workspace's **Back** button opens My PPC workspace. **Next** browses existing
 released problems using 30% recorded continuation, 40% same-topic, and 30% random
-selection pools, excluding the current problem. Unavailable pools are omitted
+selection pools, excluding the current problem and all problems whose reference
+has already been viewed. Unavailable pools are omitted
 and remaining weights renormalized. This never creates or rerolls a RACG draw.
 The library shows an animated result count only while search text is nonblank.
 The screenshot refinement regression suite is `node tests/polish_browser.mjs`

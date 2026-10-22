@@ -163,7 +163,7 @@
 
   // Browse existing released problems only. This is not a new RACG draw.
   function pickNextProblem(problems,current,random=Math.random){
-    const others=(problems||[]).filter(p=>p.id!==current.id);
+    const others=(problems||[]).filter(p=>p.id!==current.id&&!p.reference_revealed);
     if(!others.length)return null;
     const continuation=others.filter(p=>p.continuation_of===current.id);
     const sameTopic=others.filter(p=>current.topic_id!=null&&p.topic_id===current.topic_id);

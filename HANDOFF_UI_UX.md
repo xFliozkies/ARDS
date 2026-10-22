@@ -238,3 +238,13 @@ wrapping. Focus remains keyboard accessible. Targeted browser checks now assert
 one shared vertical center at 375/768/1280/1920px and no toolbar overflow at
 1920px. These checks passed, as did the full responsive browser/axe suite and six
 static accessibility tests. No server or learner-data changes.
+
+## Next eligibility — 2026-10-22
+
+Next now excludes every problem with `reference_revealed` before building any
+continuation, same-topic, or random pool. Remaining nonempty pools keep their
+renormalized weights. If all other problems have been revealed, Next reports
+that no unviewed-reference problem is available. The button already fetches the
+current public list on every click. Node regression checks cover boolean and
+SQLite integer flags, all three pools, empty eligibility, and renormalization;
+all 14 editor/helper tests passed. No database or reveal-gate changes.

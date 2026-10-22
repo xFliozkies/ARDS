@@ -38,3 +38,21 @@ test('next browsing uses 30/40/30 pools and renormalizes missing choices',()=>{
  assert.equal(choose([current,{id:'D',topic_id:8}],0).id,'D');
  assert.equal(choose([current],0),null);
 });
+test('Next excludes viewed references from every selection pool',()=>{
+ const current={id:'A',topic_id:7};
+ const viewed=[{id:'B',topic_id:7,continuation_of:'A',reference_revealed:1},
+               {id:'C',topic_id:7,reference_revealed:true},
+               {id:'D',topic_id:8,reference_revealed:1}];
+ const eligible={id:'E',topic_id:8,reference_revealed:0};
+ for(const roll of [0,0.29,0.3,0.69,0.7,0.99]){
+  let calls=0;
+  assert.equal(logic.pickNextProblem([current,...viewed,eligible],current,()=>calls++===0?roll:0.99).id,'E');
+ }
+ assert.equal(logic.pickNextProblem([current,...viewed],current),null);
+ // Removing a viewed continuation renormalizes the remaining 40:30 pools.
+ const same={id:'F',topic_id:7,reference_revealed:false};
+ for(const [roll,expected] of [[0.56,'F'],[0.58,'E']]){
+  let calls=0;
+  assert.equal(logic.pickNextProblem([current,...viewed,same,eligible],current,()=>calls++===0?roll:0.99).id,expected);
+ }
+});
