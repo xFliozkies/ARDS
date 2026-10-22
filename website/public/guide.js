@@ -86,7 +86,7 @@ function select(id,{scroll=true,hash=true}={}){
   el('manual-prev').disabled=index===0;
   el('manual-next').disabled=index===chapters.length-1;
   if(name==='methods')renderTechnique();
-  if(hash&&location.hash.startsWith('#/method'))history.replaceState(null,'','#/method/'+name);
+  if(hash&&location.hash.startsWith('#/method'))location.hash='#/method/'+name;
   // Chapter changes reset only the reading position, not the whole page.
   // The chapter navigation keeps its own scroll position and remains sticky.
   if(scroll&&!el('view-guide').classList.contains('hidden')){

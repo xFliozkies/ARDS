@@ -86,9 +86,15 @@
     for(const message of [
       'Independent passes already graded will remain counted.',
       'Later attempts cannot earn new independent assessment credit.',
-      'Ungraded or unsuccessful attempts will not be preserved.'
+      'All attempts remain archived. Ungraded or unsuccessful first attempts cannot earn independent credit after reveal.'
     ])consequences.append(h('li','',message));
     content.append(consequences);
+    const label=h('label','','What is still unresolved in your proof? (optional, browser-only notes)');
+    const reflection=h('textarea','reveal-reflection');reflection.rows=3;
+    reflection.value=stored('ards-reflection-'+id);label.append(reflection);
+    const saved=h('span','');saved.setAttribute('role','status');
+    reflection.addEventListener('input',()=>{saved.textContent=remember('ards-reflection-'+id,reflection.value)?'Saved in this browser':'Could not save reflection. Copy it before closing.';});
+    content.append(label,saved);
     openModal('Reveal reference PPC?',id+' · Assessment consequences',content,[
       {label:'Cancel',action:()=>{}},
       {label:'Reveal PPC',primary:true,action:onConfirm}
@@ -96,7 +102,7 @@
     // Safe default: pressing Enter must not immediately reveal the solution.
     $('workspace-dialog-actions').querySelector('button')?.focus();
   }
-  function showReference(data){
+  function showReference(data,studentDraft){
     // A proper modal reference document, not four unformatted excerpts.
     // ARDSStatement.rich uses local Markdown-It (HTML disabled) and untrusted KaTeX.
     const content=h('article','reference-modal-content');
@@ -127,6 +133,16 @@
       const value=data.reference_ppc?.[key]||'No reference provided for this section.';
       section.append(window.ARDSStatement.referenceRich(value));
       content.append(section);
+    }
+    if(studentDraft){
+      const comparison=h('details','reference-comparison');comparison.append(h('summary','','Compare with my current PPC'));
+      for(const [key,short,name] of sections){
+        const row=h('section','comparison-row');row.append(h('h3','',short+' · '+name));
+        const own=h('div','comparison-own');own.append(h('h4','','Your PPC'),window.ARDSStatement.rich(studentDraft[key]||'_(empty)_'));
+        const reference=h('div','comparison-reference');reference.append(h('h4','','Revealed reference'),window.ARDSStatement.referenceRich(data.reference_ppc?.[key]||''));
+        row.append(own,reference);comparison.append(row);
+      }
+      content.prepend(comparison);
     }
     openModal('Reference PPC',data.message,content);
   }

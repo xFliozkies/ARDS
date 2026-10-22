@@ -16,6 +16,7 @@
   <script src="/statement-renderer.js" defer></script>
   <script src="/workspace-ui.js" defer></script>
   <script src="/editor.js" defer></script>
+  <script src="/studio-logic.js" defer></script>
   <script src="/app.js" defer></script>
   <script src="/guide.js" defer></script>
 </head>
@@ -50,7 +51,7 @@
       </div>
 
       <button class="global-search" type="button" id="open-command" aria-label="Search problems">
-        <svg class="icon"><use href="#i-search"></use></svg><span>Search anything...</span><kbd>/</kbd>
+        <svg class="icon"><use href="#i-search"></use></svg><span>Search problems</span><kbd aria-hidden="true">/</kbd>
       </button>
 
       <div class="nav-group">
@@ -106,11 +107,11 @@
             <div class="filter-set" id="filter-set">
               <label class="library-search"><svg class="icon"><use href="#i-search"></use></svg><input id="library-search" type="search" placeholder="Search title, topic or ID" aria-label="Search problems by title, topic or ID" autocomplete="off"></label>
               <label class="select-wrap" aria-label="Filter difficulty"><svg class="icon"><use href="#i-filter"></use></svg><select id="filter-level"><option value="">All levels</option><option value="1">Level 1</option><option value="2">Level 2</option><option value="3">Level 3</option><option value="4">Level 4</option><option value="5">Level 5</option><option value="6">Level 6</option></select></label>
-              <label class="select-wrap secondary-filter" aria-label="Filter status"><select id="filter-status"><option value="">All statuses</option><option value="presented">Ready to solve</option><option value="evaluated">Evaluated</option><option value="attempted">Attempted</option></select></label>
+              <label class="hidden" aria-label="Legacy status"><select id="filter-status"><option value="">All statuses</option><option value="presented">Ready to solve</option><option value="evaluated">Reviewed</option><option value="attempted">Attempted</option></select></label>
               <label class="select-wrap secondary-filter" aria-label="Filter topic"><select id="filter-topic"><option value="">All topics</option></select></label>
               <label class="select-wrap secondary-filter" aria-label="Filter reasoning family"><select id="filter-family"><option value="">All families</option></select></label>
               <label class="select-wrap secondary-filter" aria-label="Filter presentation"><select id="filter-presentation"><option value="">All formats</option><option value="story">Story</option><option value="direct">Direct</option></select></label>
-              <label class="select-wrap" aria-label="Filter progress"><select id="filter-progress"><option value="">All progress</option><option value="unattempted">Not attempted</option><option value="attempted">Attempted</option><option value="passed">Passed review</option><option value="eligible">Not revealed</option><option value="revealed">Reference revealed</option></select></label>
+              <label class="select-wrap" aria-label="Filter progress"><select id="filter-progress"><option value="">All progress</option><option value="status:presented">Ready to solve</option><option value="progress:unattempted">Not attempted</option><option value="progress:attempted">Attempted</option><option value="status:evaluated">Reviewed</option><option value="progress:passed">Passed review</option><option value="progress:eligible">Reference not viewed</option><option value="progress:revealed">Reference viewed</option></select></label>
               <div class="similar-picker secondary-filter" id="similar-picker">
                 <div class="select-wrap">
                   <input id="filter-similar" type="hidden">
@@ -125,10 +126,10 @@
             </div>
           </div>
 
-          <div class="filter-summary"><div id="filter-chips" class="filter-chips" aria-label="Active filters"></div><span id="result-count" class="result-count" aria-live="polite"></span></div>
+          <div class="filter-summary"><div id="filter-chips" role="group" class="filter-chips" aria-label="Active filters"></div><span id="result-count" class="result-count" aria-live="polite"></span></div>
           <div class="problem-table">
-            <div class="table-header"><span>CHALLENGE</span><span>TOPIC</span><span>DIFFICULTY</span><span>PROGRESS</span><span></span><span aria-label="Actions"></span></div>
-            <div id="problem-list" class="problem-items" aria-live="polite"><div class="loading-state">Loading your archive…</div></div>
+            <div class="table-header"><span>CHALLENGE</span><span>TOPIC</span><span>DIFFICULTY</span><span>PROGRESS</span><span></span><span><span class="sr-only">Actions</span></span></div>
+            <div id="problem-list" class="problem-items" aria-live="polite"><div class="skeleton-row" aria-label="Loading problems"></div><div class="skeleton-row" aria-hidden="true"></div><div class="skeleton-row" aria-hidden="true"></div></div>
           </div>
           <nav id="problem-pagination" class="problem-pagination" aria-label="Problem pages">
             <span id="pagination-summary" class="pagination-summary" aria-live="polite"></span>
@@ -194,6 +195,7 @@
             </div>
             <details id="self-check" class="workspace-notes"><summary>Self-check questions</summary><ul id="self-check-questions"></ul></details>
             <details class="workspace-notes"><summary>Scratch notes · not submitted</summary><label for="scratch-notes">Saved in this browser only</label><textarea id="scratch-notes" rows="4"></textarea><span id="scratch-status" role="status"></span></details>
+            <section id="assessment-panel" class="workspace-notes" aria-label="Recorded reviews"></section>
             <div class="editor-footer">
               <div class="editor-tips"><svg class="icon"><use href="#i-info"></use></svg> Every section is preserved as you work.</div>
               <div class="footer-actions"><label class="independent-attestation"><input id="independent-attest" type="checkbox"> Independent, without hints</label><button id="next-section" type="button" class="button button-outline">Next section <svg class="icon"><use href="#i-arrow"></use></svg></button><button id="submit-ppc" type="button" class="button button-primary">Submit PPC <svg class="icon"><use href="#i-arrow"></use></svg></button></div>
@@ -232,8 +234,10 @@
         </div>
       </main>
 
+      <main id="view-drafts" class="page hidden"><div class="guide-wrap"><h1>My PPC drafts</h1><p>Your saved writing. Submissions require a separate review.</p><div class="draft-export-actions"><button type="button" class="button button-outline" id="export-all-md">Download Markdown</button><button type="button" class="button button-outline" id="export-all-json">Download JSON</button></div><div id="draft-list" aria-live="polite"></div></div></main>
+      <main id="view-unavailable" class="page hidden"><div class="guide-wrap"><h1>Problem unavailable</h1><p id="unavailable-message">Problem not found.</p><button type="button" class="button button-outline" id="unavailable-back">Problem library</button></div></main>
       <main id="view-overview" class="page page-overview hidden">
-        <div class="guide-wrap"><button id="overview-back" type="button" class="back-link"><svg class="icon"><use href="#i-chevron"></use></svg> Problem library</button><div class="eyebrow"><span class="eyebrow-line"></span> THE SYSTEM</div><h1>Your progress</h1><p class="lead">The archive remembers what was attempted, without pretending that an unverified proof is correct.</p><div id="overview-levels" class="overview-levels"></div><div id="overview-details" class="overview-details"></div></div>
+        <div class="guide-wrap"><button id="overview-back" type="button" class="back-link"><svg class="icon"><use href="#i-chevron"></use></svg> Problem library</button><div class="eyebrow"><span class="eyebrow-line"></span> THE SYSTEM</div><h1>Your progress</h1><p class="lead">The archive remembers what was attempted, without pretending that an unverified proof is correct.</p><div id="overview-levels" class="overview-levels"></div><details><summary>Progress by topic</summary><div id="overview-topics"></div></details><div id="overview-details" class="overview-details"></div></div>
       </main>
     </div>
   </div>

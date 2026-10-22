@@ -50,7 +50,7 @@ function switchView(name){
   state.view=name;
   document.querySelectorAll('.page').forEach(x=>x.classList.add('hidden'));
   $('view-'+name).classList.remove('hidden');
-  markActive(name==='problem'?'nav-drafts':name==='overview'?'nav-overview':name==='guide'?'nav-method':'nav-library');
+  markActive(name==='drafts'||(name==='problem'&&state.problemOrigin==='drafts')?'nav-drafts':name==='overview'?'nav-overview':name==='guide'?'nav-method':'nav-library');
   $('sidebar').classList.remove('visible');
   $('mobile-menu').setAttribute('aria-expanded','false');
   $('mobile-menu').setAttribute('aria-label','Open navigation');
@@ -66,20 +66,20 @@ function refreshStats(stats){
     ['Authored problems (including private review queue)',stats.authored],
     ['Awaiting verification',stats.under_review],
     ['Released for assessed practice',stats.published],
-    ['Saved PPC drafts',stats.drafts],['Recorded reasoning attempts',stats.attempts],
+    ['Saved PPC drafts',stats.drafts],['Submitted PPCs',stats.attempts],
     ['Independent graded attempts',stats.independent_graded],
-    ['Reference-opened challenges excluded',stats.revealed],
-    ['Archived assessment records',stats.assessments],
+    ['Problems with reference viewed',stats.revealed],
+    ['Recorded reviews',stats.assessments],
     ['Privacy','Local-only'],['Difficulty policy','Classic RACG']
   ].map(([name,value])=>'<div class="overview-row"><span>'+esc(name)+'</span><strong>'+esc(value)+'</strong></div>').join('');
 }
 function statusFor(problem){
   if(problem.review_only||problem.status==='under_review')return {label:'Under review',cls:'review'};
-  if(problem.reference_revealed)return {label:'Reference opened',cls:'done'};
+  if(problem.reference_revealed)return {label:'Reference viewed',cls:'done'};
   if(problem.passed)return {label:'Passed review',cls:'done'};
   if(problem.status==='presented')return {label:'Ready to solve',cls:'open'};
   if(problem.status==='attempted')return {label:'Attempted',cls:'open'};
-  if(problem.status==='evaluated')return {label:'Evaluated',cls:'done'};
+  if(problem.status==='evaluated')return {label:'Reviewed',cls:''};
   return {label:problem.status,cls:''};
 }
 function renderProblemPagination(){
@@ -138,7 +138,7 @@ function renderProblems(){
     b.type='button';b.className='problem-item';
     b.innerHTML='<span class="problem-name"><strong>'+esc(p.title||'Untitled problem')+'</strong><small>'+esc(p.id)+'</small></span>'+
       '<span class="problem-topic">'+esc(p.topic_label||'Foundational reasoning')+'</span>'+
-      '<span><span class="level-chip">Level '+esc(p.difficulty??'—')+'</span></span>'+
+      '<span><span class="level-chip">Level '+esc(p.difficulty??'—')+'</span><span class="level-pips" aria-hidden="true">'+[1,2,3,4,5,6].map(n=>n<=p.difficulty?'▰':'▱').join('')+'</span></span>'+
       '<span class="status-chip '+esc(status.cls)+'">'+esc(status.label)+'</span>'+
       '<svg class="icon row-arrow"><use href="#i-chevron"></use></svg>';
     b.addEventListener('click',()=>openProblem(p.id));
@@ -165,19 +165,25 @@ async function loadProblems(search='',{resetPage=false,scrollToList=false}={}){
   for(const [control,key] of [
     ['filter-level','difficulty'],['filter-status','status'],
     ['filter-topic','topic'],['filter-family','family'],
-    ['filter-presentation','presentation'],['filter-progress','progress'],
+    ['filter-presentation','presentation'],
     ['filter-similar','similar_to'],['filter-sort','sort']
   ]){
     const value=$(control).value;
     if(value)query.set(key,value);
   }
+  const lifecycle=window.ARDSLogic.lifecycleParam($('filter-progress').value);
+  if(lifecycle)query.set(...lifecycle);
+  saveLibraryState();renderFilterChips();
+  $('problem-list').setAttribute('aria-busy','true');
   const data=await api('/api/problems?'+query);
+  $('problem-list').setAttribute('aria-busy','false');
   if(requestId!==state.problemRequestId)return;
   state.problems=data.problems;
   state.page=data.page;
   state.pages=data.pages;
   state.total=data.total;
-  renderProblems();
+  renderProblems();saveLibraryState();
+  $('result-count').textContent=data.total+' matching problems';
   if(scrollToList && state.view==='library')document.querySelector('.problem-table').scrollIntoView({block:'start',behavior:'instant'});
 }
 async function loadFacets(){
@@ -191,8 +197,8 @@ async function loadFacets(){
     }
     element.value=original;
   };
-  fill($('filter-topic'),data.topics,x=>x.id,x=>x.id+' · '+x.label);
-  fill($('filter-family'),data.families,x=>x,x=>x.replace(/^classic_topic_/,'Family · Topic '));
+  fill($('filter-topic'),window.ARDSLogic.topicLabels(data.topics),x=>x.id,x=>x.text);
+  fill($('filter-family'),data.families,x=>x,x=>window.ARDSLogic.familyLabel(x,data.topics));
   comparisonProblems=data.comparison;
   syncSimilarSelection();
 }
@@ -282,7 +288,7 @@ function showSimilar(id){
   goLibrary();
 }
 async function loadOverview(){
-  try{refreshStats(await api('/api/overview'));}catch(err){notify('Could not load workspace overview: '+err.message,true);}
+  try{const [stats,problems]=await Promise.all([api('/api/overview'),allPublicProblems()]);refreshStats(stats);renderOverview(problems);}catch(err){notify('Could not load workspace overview: '+err.message,true);}
 }
 /* ---- Local mirror: the latest unsaved text per problem, kept in this browser only.
    It holds the student's own words and is cleared once the server has them. ---- */
@@ -439,7 +445,7 @@ function exportDraft(){
   if(!state.current||!state.draft)return;
   preserveText();
   const parts=['# '+state.current.id+' — '+(state.current.title||'Untitled problem'),'','_Draft exported from ARDS Studio. Not graded._',''];
-  for(const s of SECTIONS)parts.push('## '+SECTION_LABELS[s],'',state.draft[s].trimEnd()||'_(empty)_','');
+  for(const s of SECTIONS)parts.push('## '+SECTION_LABELS[s],'',state.draft[s]||'_(empty)_','');
   const blob=new Blob([parts.join('\n')],{type:'text/markdown;charset=utf-8'});
   const link=document.createElement('a');
   link.href=URL.createObjectURL(blob);
@@ -476,10 +482,15 @@ function showSection(section,{skipPreserve=false}={}){
   svg.setAttribute('class','icon');const use=document.createElementNS('http://www.w3.org/2000/svg','use');use.setAttribute('href','#i-arrow');svg.appendChild(use);$('next-section').appendChild(svg);
   $('submit-ppc').disabled=Boolean(state.current?.review_only)||!allFilled();
 }
-async function openProblem(id){
+async function openProblem(id,{fromRoute=false}={}){
+  if(!fromRoute){state.problemOrigin=state.view==='drafts'?'drafts':'library';try{sessionStorage.setItem('ards-problem-origin',state.problemOrigin);}catch{}rememberLibraryScroll();navigate('#/problem/'+encodeURIComponent(id));return;}
+  try{state.problemOrigin=sessionStorage.getItem('ards-problem-origin')||'library';}catch{}
+  const request=++problemOpenRequest;
+  $('workspace-loading').classList.remove('hidden');
   if(state.current&&state.current.id!==id&&state.draft)await saveDraft(true);
   try{
     const [problem,draft]=await Promise.all([api('/api/problems/'+encodeURIComponent(id)),api('/api/drafts/'+encodeURIComponent(id))]);
+    if(request!==problemOpenRequest||window.ARDSLogic.parseRoute(location.hash).id!==id)return;
     state.current=problem;state.draft={};SECTIONS.forEach(s=>state.draft[s]=draft[s]||'');
     state.loadedDraft=JSON.stringify(state.draft);
     state.lastSelected=id;localStorage.setItem('ards-last-selected',id);
@@ -508,9 +519,11 @@ async function openProblem(id){
     switchView('problem');
     document.querySelector('.statement-panel').scrollTop=0;
     document.querySelector('.editor-panel').scrollTop=0;
-    history.replaceState(null,'','#/problem/'+encodeURIComponent(id));
+    rememberRecentProblem(problem);
+    renderAssessments(problem);
     offerLocalMirror(id,draft);
-  }catch(err){notify('Could not open problem: '+err.message,true);}
+  }catch(err){if(request!==problemOpenRequest)return;switchView('unavailable');$('unavailable-message').textContent=err.status===404?'Problem not found. It may not be released.':err.message;}
+  finally{if(request===problemOpenRequest)$('workspace-loading').classList.add('hidden');}
 }
 function revealReference(){
   if(!state.current || !state.current.reference_available)return;
@@ -531,10 +544,11 @@ async function loadReference(id){
       {method:'POST',body:JSON.stringify({confirm:true})});
     if(!state.current || state.current.id!==id)return;
     state.current.reference_revealed=true;
-    $('problem-progress').textContent='REFERENCE OPENED';
+    $('problem-progress').textContent='REFERENCE VIEWED';
     button.textContent='View PPC';
     $('independent-attest').disabled=true;
-    window.ARDSUI.showReference(result);
+    preserveText();
+    window.ARDSUI.showReference(result,state.draft);
     await loadProblems();
     notify(result.message);
   }catch(err){notify('Could not reveal PPC: '+err.message,true);}
@@ -629,16 +643,14 @@ async function performSubmit(){
     notify(response.independent?'Independent first attempt recorded; it still requires correctness assessment.':'PPC recorded for review; no automatic pass is claimed.');
     $('independent-attest').disabled=true;
     state.loadedDraft=JSON.stringify(state.draft);
+    state.current.attempt_count=(state.current.attempt_count||0)+1;
+    clearMirror(state.current.id);
     setSaveState('idle','Submitted · '+response.stage);
     await loadOverview();
   }catch(err){if(!handleWriteError(err))notify('Could not submit PPC: '+err.message,true);}
   finally{state.busy=false;$('submit-ppc').disabled=Boolean(state.current?.review_only)||!allFilled();}
 }
-function goLibrary(){
-  if(state.view==='problem'){clearTimeout(state.saveTimer);saveDraft(true);}
-  switchView('library');history.replaceState(null,'','#/');
-  loadProblems().catch(err=>notify(err.message,true));
-}
+function goLibrary(){navigate('#/');}
 let commandOpener=null;
 async function showCommand(){
   if($('search-overlay').classList.contains('hidden'))commandOpener=document.activeElement;
@@ -654,20 +666,31 @@ function hideCommand(){
   if(target&&document.contains(target)&&typeof target.focus==='function')target.focus();
 }
 async function renderCommandResults(query){
-  try{
-    const data=await api('/api/problems?'+new URLSearchParams({q:query}));
-    const root=$('command-results');root.innerHTML='';
-    if(!data.problems.length){root.innerHTML='<div class="empty-state">No matches.</div>';return;}
-    for(const p of data.problems){
-      const b=document.createElement('button');b.type='button';b.className='command-result';
-      b.innerHTML='<svg class="icon"><use href="#i-file"></use></svg><span>'+esc(p.title)+'</span><small>'+esc(p.id)+'</small>';
-      b.addEventListener('click',()=>{hideCommand();openProblem(p.id);});
-      root.appendChild(b);
+  const request=++commandRequest;
+  const root=$('command-results');root.replaceChildren();
+  const add=(label,action,secondary='')=>{
+    const button=document.createElement('button');button.type='button';button.className='command-result';
+    const text=document.createElement('span');
+    for(const part of window.ARDSLogic.highlightParts(label,query)){
+      const node=document.createElement(part.match?'mark':'span');node.textContent=part.text;text.append(node);
     }
-  }catch(err){notify(err.message,true);}
+    const small=document.createElement('small');small.textContent=secondary;button.append(text,small);
+    button.addEventListener('click',()=>{hideCommand();action();});root.append(button);
+  };
+  const actions=[['Open drafts',()=>navigate('#/drafts')],['Go to overview',()=>navigate('#/overview')],['Save draft',()=>saveDraft(false)],
+    ...['start','spec','algorithm','proof','methods','complexity','notation','example'].map((chapter,i)=>['Open manual chapter '+(i+1)+' · '+chapter,()=>navigate('#/method/'+chapter)])];
+  for(const [label,action] of actions)if(label.toLowerCase().includes(query.toLowerCase())&&(label!=='Save draft'||state.view==='problem'))add(label,action,'Action');
+  try{
+    const result=await api('/api/problems?'+new URLSearchParams({q:query}));if(request!==commandRequest)return;
+    const recent=readStored('ards-recent-problems',[]),rows=result.problems;
+    rows.sort((a,b)=>{const rank=id=>{const n=recent.findIndex(x=>x.id===id);return n<0?999:n;};return rank(a.id)-rank(b.id);});
+    for(const p of rows)add(p.title,()=>openProblem(p.id),(recent.some(x=>x.id===p.id)?'Recent · ':'')+p.id);
+    if(!root.childElementCount)root.textContent='No matches.';
+  }catch(err){if(request===commandRequest)notify(err.message,true);}
 }
 function bind(){
   bindSimilarPicker();
+  bindRemaining();
   window.ARDSUI.bindWorkspace();
   document.addEventListener('keydown',e=>{
     if(e.altKey&&/^[1-4]$/.test(e.key)&&state.view==='problem'){
@@ -680,9 +703,9 @@ function bind(){
     }
   });
   $('nav-library').addEventListener('click',goLibrary);
-  $('nav-drafts').addEventListener('click',()=>state.lastSelected?openProblem(state.lastSelected):notify('Open a problem to start your PPC draft.'));
-  $('nav-overview').addEventListener('click',()=>{switchView('overview');history.replaceState(null,'','#/overview');loadOverview();});
-  $('nav-method').addEventListener('click',()=>{if(state.view==='problem'){clearTimeout(state.saveTimer);saveDraft(true);}switchView('guide');history.replaceState(null,'','#/method/'+(window.PPCGuide?'start':'start'));if(window.PPCGuide)window.PPCGuide.select('start');});
+  $('nav-drafts').addEventListener('click',()=>navigate('#/drafts'));
+  $('nav-overview').addEventListener('click',()=>navigate('#/overview'));
+  $('nav-method').addEventListener('click',()=>navigate('#/method/start'));
   $('learn-ppc').addEventListener('click',()=>$('nav-method').click());
   $('go-back').addEventListener('click',goLibrary);
   $('editor-open-guide').addEventListener('click',()=>window.ARDSUI.explain(state.section).catch(err=>notify(err.message,true)));
@@ -757,14 +780,169 @@ function bind(){
     if(e.key==='Tab'&&!$('search-overlay').classList.contains('hidden'))window.ARDSUI?.trapTab(e,$('search-overlay'));
   });
 }
+/* Routing, student-only draft discovery, and library session state. */
+let problemOpenRequest=0,routeRequest=0,commandRequest=0;
+const FILTER_IDS=['filter-level','filter-topic','filter-family','filter-presentation','filter-progress','filter-similar','filter-sort'];
+let draftEntries=[];
+function readStored(key,fallback){try{return JSON.parse(localStorage.getItem(key))??fallback;}catch{return fallback;}}
+function rememberRecentProblem(p){
+  try{localStorage.setItem('ards-recent-problems',JSON.stringify(window.ARDSLogic.rememberRecent(readStored('ards-recent-problems',[]),p.id,p.title)));}catch{}
+}
+function saveLibraryState(){
+  try{sessionStorage.setItem('ards-library-state',JSON.stringify({page:state.page,perPage:state.perPage,search:state.search,scroll:state.libraryScroll||0,filters:Object.fromEntries(FILTER_IDS.map(id=>[id,$(id).value]))}));}catch{}
+}
+function rememberLibraryScroll(){if(state.view==='library'){state.libraryScroll=window.scrollY;saveLibraryState();}}
+function restoreLibraryState(){
+  try{
+    const saved=JSON.parse(sessionStorage.getItem('ards-library-state')||'null');if(!saved)return;
+    state.page=Math.max(1,Number(saved.page)||1);state.perPage=[12,24,48].includes(saved.perPage)?saved.perPage:12;
+    state.search=String(saved.search||'');state.libraryScroll=Number(saved.scroll)||0;
+    $('library-search').value=state.search;$('page-size').value=state.perPage;
+    for(const id of FILTER_IDS)if(saved.filters?.[id]!==undefined)$(id).value=saved.filters[id];
+    syncSimilarSelection();
+  }catch{}
+}
+function navigate(hash){
+  rememberLibraryScroll();
+  if(location.hash===hash){route();return;}location.hash=hash;
+}
+async function route(){
+  const version=++routeRequest;
+  const route=window.ARDSLogic.parseRoute(location.hash);
+  if(state.view==='library')rememberLibraryScroll();
+  if(state.current&&state.draft){clearTimeout(state.saveTimer);await saveDraft(true);writeMirror();}
+  if(version!==routeRequest)return;
+  if(route.name==='problem'){await openProblem(route.id,{fromRoute:true});return;}
+  ++problemOpenRequest;$('workspace-loading').classList.add('hidden');
+  if(route.name==='guide'){
+    switchView('guide');window.PPCGuide?.select(route.chapter,{hash:false,scroll:false});
+  }else if(route.name==='overview'){switchView('overview');await loadOverview();}
+  else if(route.name==='drafts'){switchView('drafts');await loadDrafts();}
+  else{
+    switchView('library');await Promise.all([loadProblems(),updateContinue()]);
+    if(version===routeRequest)window.scrollTo({top:state.libraryScroll||0,behavior:'instant'});
+    if(route.invalid)notify('Unknown page. Showing the problem library.');
+  }
+}
+async function allPublicProblems(){
+  let rows=[],page=1;
+  do{
+    const result=await api('/api/problems?'+new URLSearchParams({page,per_page:48}));
+    rows.push(...result.problems);if(page>=result.pages)break;page++;
+  }while(true);
+  return rows;
+}
+async function loadDrafts(){
+  const root=$('draft-list');root.replaceChildren(skeleton('Loading saved drafts'));
+  try{
+    const problems=await allPublicProblems();
+    const entries=await Promise.all(problems.map(async p=>({id:p.id,title:p.title,draft:await api('/api/drafts/'+encodeURIComponent(p.id))})));
+    draftEntries=entries.filter(e=>e.draft.updated_at).map(e=>({...e,updated_at:e.draft.updated_at}));
+    draftEntries.sort((a,b)=>b.updated_at.localeCompare(a.updated_at));root.replaceChildren();
+    if(!draftEntries.length){root.textContent='No saved drafts yet. Open a problem and start writing.';return;}
+    const table=document.createElement('table');table.className='draft-table';
+    const head=document.createElement('thead');head.innerHTML='<tr><th scope="col">Problem</th><th scope="col">Last saved</th><th scope="col">Sections with content</th></tr>';table.append(head);
+    const body=document.createElement('tbody');
+    for(const e of draftEntries){
+      const row=document.createElement('tr'),name=document.createElement('td'),button=document.createElement('button');
+      button.type='button';button.className='text-link';button.textContent=e.title+' · '+e.id;button.addEventListener('click',()=>openProblem(e.id));name.append(button);
+      const date=document.createElement('td');date.textContent=new Date(e.updated_at).toLocaleString();
+      const sections=document.createElement('td');sections.textContent=SECTIONS.map((s,i)=>['P1','P2','C','K'][i]+': '+(e.draft[s].trim()?'filled':'empty')).join(' · ');
+      row.append(name,date,sections);body.append(row);
+    }
+    table.append(body);root.append(table);
+  }catch(err){root.textContent='Could not load drafts: '+err.message;}
+}
+function downloadText(text,name,type){
+  const link=document.createElement('a');link.href=URL.createObjectURL(new Blob([text],{type}));link.download=name;
+  document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(link.href),1000);
+}
+function skeleton(label){
+  const node=document.createElement('div');node.className='skeleton-row';node.setAttribute('role','status');node.setAttribute('aria-label',label);return node;
+}
+async function updateContinue(){
+  $('continue-card').classList.add('hidden');if(!state.lastSelected)return;
+  try{
+    const p=await api('/api/problems/'+encodeURIComponent(state.lastSelected));
+    $('continue-title').textContent=p.title;$('continue-meta').textContent=p.id+' · Level '+p.difficulty;
+    $('continue-card').classList.remove('hidden');
+  }catch{}
+}
+function renderFilterChips(){
+  const root=$('filter-chips');root.replaceChildren();let count=0;
+  const chip=(label,action)=>{const b=document.createElement('button');b.type='button';b.className='filter-chip';b.textContent=label+' ×';b.setAttribute('aria-label','Remove '+label);b.addEventListener('click',action);root.append(b);};
+  const reload=()=>loadProblems('',{resetPage:true}).catch(e=>notify(e.message,true));
+  for(const id of FILTER_IDS){
+    const el=$(id);if(!el.value||(id==='filter-sort'&&el.value==='newest'))continue;
+    const label=id==='filter-similar'?'Similar to '+el.value:el.selectedOptions[0]?.textContent||el.value;
+    chip(label,()=>{el.value=id==='filter-sort'?'newest':'';syncSimilarSelection();reload();});
+    if(['filter-topic','filter-family','filter-presentation','filter-similar'].includes(id))count++;
+  }
+  if(state.search)chip('Search: '+state.search,()=>{state.search='';$('library-search').value='';reload();});
+  if(root.childElementCount){const b=document.createElement('button');b.type='button';b.className='tool-button';b.textContent='Clear all';b.addEventListener('click',()=>{for(const id of FILTER_IDS)$(id).value=id==='filter-sort'?'newest':'';state.search='';$('library-search').value='';syncSimilarSelection();reload();});root.append(b);}
+  $('more-filters-count').hidden=!count;$('more-filters-count').textContent=String(count);
+}
+function bindRemaining(){
+  const loading=document.createElement('div');loading.id='workspace-loading';loading.className='workspace-loading hidden';loading.append(skeleton('Loading problem'));$('app').append(loading);
+  $('unavailable-back').addEventListener('click',goLibrary);
+  $('continue-open').addEventListener('click',()=>openProblem(state.lastSelected));
+  const more=document.createElement('div');more.id='more-filters-panel';more.className='more-filters-panel';more.hidden=true;
+  for(const control of document.querySelectorAll('#filter-set .secondary-filter'))more.append(control);
+  $('filter-set').append(more);$('more-filters-toggle').setAttribute('aria-controls',more.id);
+  const closeMore=()=>{more.hidden=true;$('more-filters-toggle').setAttribute('aria-expanded','false');};
+  $('more-filters-toggle').addEventListener('click',()=>{more.hidden=!more.hidden;$('more-filters-toggle').setAttribute('aria-expanded',String(!more.hidden));});
+  document.addEventListener('click',e=>{if(!more.contains(e.target)&&!$('more-filters-toggle').contains(e.target))closeMore();});
+  more.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();closeMore();$('more-filters-toggle').focus();}});
+  $('export-all-md').addEventListener('click',()=>downloadText(draftEntries.map(e=>window.ARDSLogic.draftMarkdown(e.id,e.title,e.draft,e.updated_at)).join('\n---\n\n'),'ards-drafts.md','text/markdown;charset=utf-8'));
+  $('export-all-json').addEventListener('click',()=>downloadText(window.ARDSLogic.draftsJson(draftEntries),'ards-drafts.json','application/json;charset=utf-8'));
+}
+function renderOverview(problems){
+  const summary=window.ARDSLogic.progressSummary(problems),root=$('overview-levels');root.replaceChildren();
+  if(!summary.total){
+    const p=document.createElement('p');p.textContent='No released problems yet. Your released, attempted, and passed counts will appear here.';
+    const link=document.createElement('a');link.href='#/method/start';link.textContent='Read the PPC manual';root.append(p,link);
+  }else{
+    const heading=document.createElement('h2');heading.textContent='Progress by level';root.append(heading);
+    for(const row of summary.levels)root.append(progressRow('Level '+row.level,row));
+  }
+  const topics=$('overview-topics');topics.replaceChildren(...summary.topics.map(row=>progressRow(row.label,row)));
+}
+function progressRow(label,row){
+  const section=document.createElement('section');section.className='progress-row';
+  const heading=document.createElement('h3');heading.textContent=label;
+  const counts=document.createElement('p');counts.textContent=row.released+' released · '+row.attempted+' attempted · '+row.passed+' passed review';
+  const meter=document.createElement('meter');meter.min=0;meter.max=Math.max(1,row.released);meter.value=row.attempted;meter.setAttribute('aria-label',label+': attempted '+row.attempted+' of '+row.released+' released');
+  section.append(heading,counts,meter);return section;
+}
+async function renderAssessments(problem){
+  const root=$('assessment-panel');root.replaceChildren();
+  const title=document.createElement('h3');title.textContent='Recorded reviews';
+  const note=document.createElement('p');note.textContent="A review is a reviewer's critique, not a machine proof. Submissions are not auto-graded.";root.append(title,note);
+  try{
+    const {reviews}=await api('/api/reviews/'+encodeURIComponent(problem.id),{headers:{'X-ARDS-Session':state.token}});
+    if(state.current?.id!==problem.id)return;
+    if(!reviews.length){const p=document.createElement('p');p.textContent='No recorded reviews yet.';root.append(p);}
+    for(const review of reviews){
+      const details=document.createElement('details');details.className='assessment-review';details.dataset.verdict=review.verdict;
+      const summary=document.createElement('summary');summary.textContent=review.verdict.charAt(0).toUpperCase()+review.verdict.slice(1)+' · '+review.reviewer+' · '+new Date(review.assessed_at).toLocaleDateString()+' · attempt '+review.attempt_id;
+      details.append(summary);
+      for(const section of SECTIONS){
+        const heading=document.createElement('h4');heading.textContent=SECTION_LABELS[section];details.append(heading);
+        const finding=review.sections[section];
+        if(!finding){const p=document.createElement('p');p.textContent='No structured section finding recorded.';details.append(p);continue;}
+        for(const [field,label] of [['status','Finding status'],['finding','Finding'],['evidence','Evidence'],['uncertainty','Stated uncertainty']]){
+          const p=document.createElement('p');p.textContent=label+': '+(finding[field]||'Not separately recorded.');details.append(p);
+        }
+      }
+      root.append(details);
+    }
+  }catch(err){if(state.current?.id===problem.id){const p=document.createElement('p');p.textContent='Reviews unavailable: '+err.message;root.append(p);}}
+}
 async function init(){
   try{
     const session=await api('/api/session');state.token=session.token;
-    bind();await loadFacets();await Promise.all([loadProblems(),loadOverview()]);
-    const hash=decodeURIComponent(location.hash);
-    if(hash.startsWith('#/problem/')){await openProblem(hash.slice(10));}
-    else if(hash.startsWith('#/method')){$('nav-method').click();if(window.PPCGuide){const chapter=hash.slice('#/method/'.length);if(chapter&&chapter!==hash)window.PPCGuide.select(chapter);}}
-    else if(hash==='#/overview'){$('nav-overview').click();}
+    bind();await loadFacets();restoreLibraryState();await Promise.all([loadProblems(),loadOverview(),updateContinue()]);
+    window.addEventListener('hashchange',route);await route();
   }catch(err){
     const network=err instanceof TypeError&&/fetch|network|load failed/i.test(err.message);
     $('problem-list').innerHTML='<div class="empty-state">'+(network

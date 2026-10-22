@@ -129,7 +129,8 @@ def list_problems(search="", difficulty="", status="", limit=250, topic="", fami
           )
           SELECT v.*,
                  EXISTS(SELECT 1 FROM attempts a JOIN assessments s ON s.attempt_id=a.id
-                        WHERE a.challenge_id=v.challenge_id AND a.stage='first' AND s.correct=1) AS passed,
+                        WHERE a.challenge_id=v.challenge_id AND a.stage='first' AND s.correct=1
+                        AND s.id=(SELECT MAX(last.id) FROM assessments last WHERE last.attempt_id=a.id)) AS passed,
                  EXISTS(SELECT 1 FROM solution_reveals x WHERE x.challenge_id=v.challenge_id) AS reference_revealed,
                  EXISTS(SELECT 1 FROM attempts a WHERE a.challenge_id=v.challenge_id) AS has_attempt
           FROM visible v WHERE 1=1
@@ -159,7 +160,7 @@ def list_problems(search="", difficulty="", status="", limit=250, topic="", fami
         elif progress=="attempted":
             query+=" AND EXISTS(SELECT 1 FROM attempts a WHERE a.challenge_id=v.challenge_id)"
         elif progress=="passed":
-            query+=" AND EXISTS(SELECT 1 FROM attempts a JOIN assessments s ON s.attempt_id=a.id WHERE a.challenge_id=v.challenge_id AND s.correct=1)"
+            query+=" AND EXISTS(SELECT 1 FROM attempts a JOIN assessments s ON s.attempt_id=a.id WHERE a.challenge_id=v.challenge_id AND a.stage='first' AND s.correct=1 AND s.id=(SELECT MAX(last.id) FROM assessments last WHERE last.attempt_id=a.id))"
         elif progress=="revealed":
             query+=" AND EXISTS(SELECT 1 FROM solution_reveals r WHERE r.challenge_id=v.challenge_id)"
         elif progress=="eligible":
@@ -322,7 +323,7 @@ def problem_detail(external_id):
         result["has_passing_assessment"]=bool(con.execute("""
              SELECT 1 FROM attempts a JOIN assessments x ON x.attempt_id=a.id
              WHERE a.challenge_id=? AND a.stage='first' AND a.independent=1 AND a.hint_level=0
-                   AND x.correct=1""",(ch["id"],)).fetchone())
+                   AND x.correct=1 AND x.id=(SELECT MAX(last.id) FROM assessments last WHERE last.attempt_id=a.id)""",(ch["id"],)).fetchone())
         sr=con.execute("SELECT preserved_attempt_id FROM solution_reveals WHERE challenge_id=?",
                        (ch["id"],)).fetchone()
         result["passed_before_reveal"]=bool(sr and sr["preserved_attempt_id"])
@@ -344,6 +345,43 @@ def get_draft(external_id):
     if not row:
         return {key:"" for key in SECTIONS}|{"updated_at":None}
     return dict(zip((*SECTIONS,"updated_at"),row))
+
+
+def student_reviews(external_id):
+    """Allowlisted recorded critiques; never load any teacher package/reference.
+
+    Legacy free-form evidence has no student-public schema and is not exposed.
+    Only structured reports explicitly recorded without reference exposure supply
+    section prose. No authoring review or verification report is queried.
+    """
+    if not problem_detail(external_id):
+        return None
+    with database() as con:
+        rows=con.execute("""SELECT s.id,s.attempt_id,s.assessed_at,s.reviewer,s.correct,s.evidence,a.stage
+            FROM assessments s JOIN attempts a ON a.id=s.attempt_id
+            JOIN challenges c ON c.id=a.challenge_id
+            WHERE c.external_id=? ORDER BY s.id DESC""",(external_id,)).fetchall()
+    reviews=[]
+    for row in rows:
+        review={k:row[k] for k in ("id","attempt_id","assessed_at","reviewer","stage")}
+        review["verdict"]="undetermined" if row["correct"] is None else ("correct" if row["correct"] else "incorrect")
+        review["sections"]={}
+        try:
+            envelope=json.loads(row["evidence"] or "null")
+        except (ValueError,TypeError):
+            envelope=None
+        if (isinstance(envelope,dict) and envelope.get("reference_ppc_exposure") is False
+                and isinstance(envelope.get("report"),dict)):
+            report=envelope["report"]
+            sections=report.get("sections",{})
+            if isinstance(sections,dict):
+                for key in SECTIONS:
+                    item=sections.get(key)
+                    if isinstance(item,dict):
+                        review["sections"][key]={field:item[field] for field in
+                            ("status","finding","evidence","uncertainty") if isinstance(item.get(field),str)}
+        reviews.append(review)
+    return {"reviews":reviews}
 
 
 def validate_ppc(body):
@@ -553,6 +591,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._file("statement-renderer.js","text/javascript; charset=utf-8")
             if path=="/workspace-ui.js":
                 return self._file("workspace-ui.js","text/javascript; charset=utf-8")
+            if path=="/studio-logic.js":
+                return self._file("studio-logic.js","text/javascript; charset=utf-8")
             if path=="/editor.js":
                 return self._file("editor.js","text/javascript; charset=utf-8")
             # Fixed, local-only vendor resources; never concatenate unchecked paths.
@@ -623,6 +663,12 @@ class Handler(BaseHTTPRequestHandler):
                 external_id=path.rsplit("/",1)[-1]
                 detail=problem_detail(external_id)
                 return self._json(detail) if detail else self._error(404,"Problem not found")
+            if path.startswith("/api/reviews/"):
+                if self.headers.get("X-ARDS-Session")!=TOKEN:
+                    return self._error(403,"Missing local session token.")
+                external_id=path.rsplit("/",1)[-1]
+                reviews=student_reviews(external_id)
+                return self._json(reviews) if reviews is not None else self._error(404,"Problem not found")
             if path.startswith("/api/drafts/"):
                 external_id=path.rsplit("/",1)[-1]
                 if not problem_detail(external_id):

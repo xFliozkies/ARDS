@@ -52,6 +52,38 @@ public network without authentication, HTTPS, auditing and a deployment review.
 - A concise overview showing canonical challenge/attempt/assessment counts.
 - **PPC Field Manual** (`#/method`): eight navigable chapters covering the formal specification, precise algorithm descriptions, correctness obligations, proof-technique selector, asymptotic complexity, searchable mathematical notation, a full prefix-sum PPC example, and a pre-submission self-review checklist. The manual is available offline, has a chapter-specific link from each PPC editor section, and includes a copyable PPC skeleton. The self-review is not a proof certificate.
 
+## UI/UX implementation (2026-10-22)
+
+Studio now supports shareable hash routes and browser Back/Forward, a saved-drafts
+page with student-only Markdown/JSON downloads, persistent library filters and
+pagination, progress by level/topic, and recorded review findings. The review
+endpoint is read-only and session-token-protected; it preserves `Undetermined`
+and never returns raw private reports or teacher packages. Opening the reference
+still records exposure before returning its content. Optional reflection and
+scratch notes are browser-only and never enter the PPC submission.
+
+The workspace includes Markdown/KaTeX preview, accessible section controls,
+keyboard/pointer resizing, narrow-screen Problem/Write switching, sample and
+statement copying, reading preferences, local unsaved recovery, and print styles.
+Alt+1–4 changes PPC sections; `?` shows shortcuts. A server restart and hard refresh
+are required after upgrading the Python routes.
+
+Development checks use synthetic temporary databases only:
+
+```sh
+node --test tests/editor_logic.test.mjs tests/studio_logic.test.mjs
+node tests/studio_browser.mjs
+```
+
+The browser suite requires a development Playwright installation and an installed
+Chromium. Set `ARDS_PLAYWRIGHT_MODULE` to Playwright's `index.mjs` and
+`ARDS_CHROMIUM_PATH` to the browser executable when outside standard locations.
+With no `ARDS_UI_TEST_URL`, it starts and cleans up its own disposable fixtures.
+It captures five views at 375/768/1280px, runs vendored axe, and verifies navigation,
+privacy, review/reveal, exports, recovery and print behavior. Artifacts default to
+`/tmp/ards-studio-ui`; override with `ARDS_SCREENSHOT_DIR`. No browser download or
+external runtime resource is required by the suite. See `tests/vendor/README.md`.
+
 ## Persistence and safety
 
 - Production problem archive: `data/ards.db`, unchanged during browsing or draft edits.

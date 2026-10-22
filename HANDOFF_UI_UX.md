@@ -21,14 +21,14 @@ Light-only, no external runtime deps (no CDN/fonts/images), local-only server wi
 | WP6 tasks 1-3 | Done in code: export drafts, localStorage mirror, session-expired banner | `ede6c0f` |
 | WP2 Accessibility | Done in code: AA contrast on all text, dialog Tab trap + focus restore (workspace dialog and search palette), focus-visible rings, reduced motion, 13px attestation label | `606066d` |
 | Startup bug fix | Done (see s3) | `566d0b2` |
-| WP3 Library | **Markup exists in `index.html` but is NOT wired** (filter collapsing, chips, continue card). Inline search, merged status filter, label cleanup, level pips, view-state persistence not done | - |
-| WP4 Routing | Not started (see s4: hash routes partly exist) | - |
-| WP5 Workspace | Not started. Statement mini-nav markup exists, unwired | - |
-| WP6 remainder | Not started: skeleton loaders, print stylesheet | - |
-| WP7 Assessment/reveal flow | Not started (largest, touches trust boundary) | - |
-| WP8 Overview | Not started. Level-progress markup exists, unwired | - |
-| WP9 Microcopy | Not started | - |
-| WP10 Tokens + Playwright/axe + privacy test | Not started | - |
+| WP3 Library | Implemented and browser checked; see final checkpoint | final continuation |
+| WP4 Routing | Implemented: history, drafts page, palette actions/recents | final continuation |
+| WP5 Workspace | Implemented and browser checked | `0b2d4bd` |
+| WP6 remainder | Implemented: skeletons and statement/reference print styles | final continuation |
+| WP7 Assessment/reveal flow | Implemented: approved student review endpoint, reflection, post-consent comparison | final continuation |
+| WP8 Overview | Implemented: level/topic totals and empty state | final continuation |
+| WP9 Microcopy | Implemented | final continuation |
+| WP10 Tokens + Playwright/axe + privacy test | Implemented; repeatable disposable browser suite and vendored axe | final continuation |
 
 Recommended order for what is left: finish pre-flight, **WP5 + WP4**, **WP3** (wire existing markup), **WP8**, **WP7** (read `server.py` reveal/assessment paths first, go slowly), **WP9**, WP6 remainder, **WP10 last**.
 
@@ -107,3 +107,67 @@ Optional `ARDS_SCREENSHOT_DIR` selects an existing screenshot directory.
 This is a WP5 smoke test, not the complete WP10/axe suite. Full keyboard-only
 walkthrough and axe remain outstanding. Routing (WP4), library (WP3), overview,
 assessment/reveal, microcopy, remaining WP6 and WP10 still need implementation.
+
+
+## Final implementation checkpoint — 2026-10-22
+
+All remaining work packages are implemented. The user explicitly approved the
+read-only student review endpoint in this conversation. `GET /api/reviews/<id>`
+requires `X-ARDS-Session` and a learner-visible released problem. It allowlists
+recorded review identity, verdict, section finding/evidence/uncertainty; it does
+not return raw report objects, teacher packages, or authoring review evidence.
+Legacy unstructured reviews retain their verdict/identity but display that
+structured findings are unavailable. The reveal transaction was not reordered.
+Reference comparison is constructed only after the successful consent-gated
+response. Reflection and scratch notes stay in localStorage and are not submitted.
+
+The existing `studio-logic.js` helpers have now been adopted, locally served and
+covered by Node tests. The drafts page uses existing public problem and draft
+endpoints; it supports Markdown/JSON downloads of student sections only. Routing
+uses hash history, including manual chapters, drafts and a nonrevealing unavailable
+page. The library restores session search, filters, sorting, pagination and scroll.
+More filters is an accessible dismissible popover. Overview aggregates paginated
+public rows; no totals are inferred from authoring packages. Corrected undetermined
+reviews no longer leave a stale historical pass badge. Historical content and
+production databases were not edited.
+
+Pre-flight findings resolved: browser Back/Forward and refresh now work; the old
+last-problem-only drafts button now opens a list. At narrow widths the two panels
+are switched rather than stacked/clipped. Editor tab arrows and dialog trapping
+work. Text is preserved on section switches; the single textarea still uses native
+browser undo rather than separate undo histories per section (the spec permits
+this fallback). An expired write visibly fails, keeps a local mirror and can be
+recovered after reload. API surface: existing session/facets/problems/detail/similar,
+drafts GET/POST, submissions POST, reveal POST, overview GET; the new reviews GET
+is the only data endpoint added. Draft revision history remains internal and is
+not presented as assessment data. Inline search is wired to the existing q filter.
+
+Observed checks: 167 Python tests OK (one skipped); 12 Node editor/helper tests
+passed. `tests/studio_browser.mjs` owns synthetic disposable fixtures by default:
+30 released synthetic problems plus an unreleased selection, and a separate empty
+fixture. It checks library/problem/manual/overview/drafts at 375/768/1280px,
+captures 15 screenshots, runs locally vendored axe-core 4.14.0 (no serious/critical
+findings), checks history/pagination/reload, filter chips, JSON export, Markdown/
+KaTeX preview, cancellation/consent/comparison, dialog focus restoration, keyboard
+palette search, expired-save mirror/recovery, print CSS, and private-selection 404.
+The browser run observed no page errors or external requests. Sample clipboard
+and workspace-specific checks remain in `tests/workspace_browser.mjs`.
+CSS tokens preserve existing values; tokenized and literal CSS produced identical
+library screenshots in a controlled comparison. Print PDFs and screenshots are
+written under `/tmp/ards-studio-ui` by default. Automated accessibility checks are
+not a certification of every assistive technology. No full separate per-section
+native undo implementation is claimed.
+
+To repeat, with Playwright available and a cached browser:
+
+```sh
+python3 -m unittest discover -s tests -p 'test_*.py' -q
+node --test tests/editor_logic.test.mjs tests/studio_logic.test.mjs
+# No URL starts/cleans up fresh temporary fixtures automatically:
+ARDS_PLAYWRIGHT_MODULE=/tmp/ards-ui-check/node_modules/playwright/index.mjs \
+ARDS_CHROMIUM_PATH=/home/shuani/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome \
+node tests/studio_browser.mjs
+```
+
+Restart the user's existing Python server and hard-refresh for the new static
+route and review endpoint. The agent only started disposable fixture servers.

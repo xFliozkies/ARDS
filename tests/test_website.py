@@ -67,6 +67,47 @@ class WebsiteTests(unittest.TestCase):
         except urllib.error.HTTPError as err:
             return err.code,err.read(),err.headers
 
+    def test_student_reviews_are_token_protected_allowlisted_and_undetermined(self):
+        import memory
+        import ppc_assess
+        with memory.connect(studio.DB) as con:
+            memory.add_attempt(con,'RACG-0003','Student original submission',stage='first',provenance='verbatim')
+            attempt=con.execute('SELECT MAX(id) FROM attempts').fetchone()[0]
+            report={"reviewer_kind":"human","reviewer":"Fixture reviewer","verdict":"undetermined",
+                    "proof_assurance":"reasoned_review","teacher_ppc":"PRIVATE_SENTINEL",
+                    "sections":{key:{"status":"uncertain","finding":"The submitted reasoning leaves this specific boundary obligation unresolved.",
+                                    "evidence":"The student's quantified claim has no argument for the empty boundary in the domain.",
+                                    "uncertainty":"Needs further review.","hidden_tests":"PRIVATE_SENTINEL"} for key in studio.SECTIONS}}
+            ppc_assess.record(con,attempt,report)
+        self.assertEqual(self.request('/api/reviews/RACG-0003')[0],403)
+        request=urllib.request.Request(self.base+'/api/reviews/RACG-0003',headers={'X-ARDS-Session':studio.TOKEN})
+        with urllib.request.urlopen(request) as response:
+            raw=response.read()
+        self.assertNotIn(b'PRIVATE_SENTINEL',raw)
+        review=json.loads(raw)['reviews'][0]
+        self.assertEqual(review['verdict'],'undetermined')
+        self.assertEqual(set(review['sections']),set(studio.SECTIONS))
+        self.assertEqual(review['sections']['correctness']['uncertainty'],'Needs further review.')
+        request=urllib.request.Request(self.base+'/api/reviews/UNRELEASED',headers={'X-ARDS-Session':studio.TOKEN})
+        with self.assertRaises(urllib.error.HTTPError) as caught:
+            urllib.request.urlopen(request)
+        self.assertEqual(caught.exception.code,404)
+
+    def test_latest_undetermined_review_does_not_leave_a_stale_pass(self):
+        import memory
+        with memory.connect(studio.DB) as con:
+            memory.add_attempt(con,'RACG-0003','Original student reasoning',stage='first',provenance='verbatim')
+            attempt=con.execute('SELECT MAX(id) FROM attempts').fetchone()[0]
+            memory.add_assessment(con,attempt,reviewer='Fixture reviewer',correct=True,evidence='Initial synthetic review')
+            memory.add_assessment(con,attempt,reviewer='Fixture correction',correct=None,evidence='A proof gap remains unresolved')
+        code,raw,_=self.request('/api/problems')
+        self.assertEqual(code,200)
+        self.assertFalse(json.loads(raw)['problems'][0]['passed'])
+        code,raw,_=self.request('/api/problems?progress=passed')
+        self.assertEqual(json.loads(raw)['problems'],[])
+        code,raw,_=self.request('/api/problems/RACG-0003')
+        self.assertFalse(json.loads(raw)['has_passing_assessment'])
+
     def test_editor_script_is_served_locally_and_loaded_by_the_page(self):
         status,body,headers=self.request('/editor.js')
         self.assertEqual(status,200)
@@ -175,7 +216,7 @@ class WebsiteTests(unittest.TestCase):
     def test_reference_ppc_uses_safe_formatted_modal_document(self):
         status,script,_=self.request('/workspace-ui.js')
         self.assertEqual(status,200)
-        self.assertIn(b"function showReference(data)",script)
+        self.assertIn(b"function showReference(data,studentDraft)",script)
         self.assertIn(b"window.ARDSStatement.referenceRich(value)",script)
         code,renderer,_=self.request('/statement-renderer.js')
         self.assertEqual(code,200)

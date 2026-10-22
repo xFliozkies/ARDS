@@ -15,6 +15,23 @@
  * marketing-style headers in a functional study product.
  */
 :root {
+  /* Shared workspace primitives; values preserve the existing light palette. */
+  --line-soft: #dfe6dd;
+  --surface-soft: #f6f8f5;
+  --line-strong: #cfd8cc;
+  --ink-reading: #354638;
+  --accent-strong: #315e3d;
+  --accent-text: #2f6a43;
+  --ink-secondary: #5d6b5f;
+  --ink-caption: #5c645e;
+  --ink-emphasis: #364b3b;
+  --line-control: #e2e8e0;
+  --radius-control: 6px;
+  --radius-card: 8px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+
   color-scheme: light;
   --font-body: 1rem;        /* 16px */
   --font-secondary: .875rem;/* 14px */
