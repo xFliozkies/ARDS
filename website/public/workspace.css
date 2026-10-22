@@ -353,3 +353,53 @@
   .reference-contents{display:grid;grid-template-columns:1fr 1fr;}
   .reference-jump{font-size:.76rem;}
 }
+
+/* ===== WP1 editor core, WP6 session/export, focus mode (light theme only) ===== */
+.editor-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:14px 26px 0}
+.mode-switch{display:inline-flex;border:1px solid #cfd8cc;border-radius:7px;overflow:hidden;background:#fff}
+.mode-button{border:0;background:#fff;color:#3f5242;font-size:12px;font-weight:620;padding:7px 14px;min-height:32px}
+.mode-button+.mode-button{border-left:1px solid #cfd8cc}
+.mode-button:hover{background:#f3f7f0}
+.mode-button.active{background:#254535;color:#fff}
+.mode-button.active:hover{background:#254535}
+.toolbar-actions{display:flex;gap:8px;flex-wrap:wrap}
+.tool-button{border:1px solid #cfd8cc;border-radius:6px;background:#fff;color:#3f5242;font-size:12px;font-weight:600;padding:6px 11px;min-height:32px}
+.tool-button:hover:not(:disabled){background:#f3f7f0}
+.tool-button[aria-expanded="true"]{background:#eaf3de;border-color:#9db98f}
+.symbol-palette{display:flex;flex-wrap:wrap;gap:6px;margin:12px 26px 0;padding:10px;border:1px solid #e0e6dc;border-radius:7px;background:#f7f9f5}
+.symbol-button{min-width:36px;min-height:34px;padding:0 9px;border:1px solid #cfd8cc;border-radius:6px;background:#fff;color:#243a2a;font-size:15px;font-family:var(--sans)}
+.symbol-button:hover{background:#eaf3de;border-color:#9db98f}
+.ppc-preview{flex:1;min-height:240px;padding:24px 26px;overflow:auto;color:#364b3b;font-size:14px;line-height:1.8;overflow-wrap:anywhere}
+.ppc-preview:focus-visible{outline:2px solid #4b8b60;outline-offset:-2px}
+.ppc-preview .statement-markdown>:first-child{margin-top:0}
+.preview-empty{color:#5d6b5f;font-style:italic;margin:0}
+.preview-fallback{white-space:pre-wrap;font-family:var(--sans);margin:0}
+.editor-meter code{font-family:var(--mono);font-size:11px;background:#f1f4ee;padding:1px 4px;border-radius:3px}
+.editor-meter{color:#5d6b5f}
+.editor-tab{color:#5d6b5f}
+.editor-tab span{color:#6c786d}
+.editor-tab .tab-state{font-style:normal;font-size:11px;margin-left:6px;color:#6c786d}
+.editor-tab .tab-state[data-filled="1"]{color:#2f6a43;font-weight:700}
+.save-indicator{color:#566458;font-size:12px}
+.save-indicator[data-state="failed"]{color:#8a2c1c;font-weight:650}
+.save-indicator[data-state="unsaved"]{color:#6a5200}
+.problem-top-right{flex-wrap:wrap;justify-content:flex-end}
+@media(max-width:700px){
+  .save-indicator{display:inline!important;font-size:11px}
+  .problem-top-right{gap:8px}
+  .symbol-palette,.editor-toolbar{margin-left:14px;margin-right:14px;padding-left:0;padding-right:0}
+  .editor-toolbar{padding-top:12px}
+  .ppc-preview{padding:18px 16px}
+}
+@media(max-width:1000px){#toggle-focus{display:none}}
+#view-problem.focus-mode .statement-panel{display:none}
+#view-problem.focus-mode .problem-workspace{grid-template-columns:minmax(0,860px);justify-content:center}
+#view-problem.focus-mode .editor-panel{border-left:0}
+.session-banner{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px clamp(18px,3vw,49px);background:#fff4d6;border-bottom:1px solid #e3c877;color:#4a3900;font-size:13px;line-height:1.5}
+.submit-confirmation p{margin:12px 0 0;font-size:14px;line-height:1.6;color:#364b3b}
+.submit-sections{margin:0;padding-left:20px;font-size:14px;line-height:1.9;color:#364b3b}
+.library-search{display:flex;align-items:center;gap:8px;min-height:38px;padding:0 10px;border:1px solid #e0e5dd;border-radius:7px;background:#fff;color:#536351;flex:1 1 220px;min-width:160px}
+.library-search input{border:0;outline:0;background:transparent;flex:1;min-width:0;font-size:13px;color:#243a2a}
+.library-search:focus-within{outline:2px solid #4b8b60;outline-offset:2px}
+/* Library filter collapsing is wired in a later package; keep its button out of sight until then. */
+.more-filters-toggle{display:none}

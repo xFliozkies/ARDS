@@ -15,6 +15,7 @@
   <script src="/vendor/katex.min.js" defer></script>
   <script src="/statement-renderer.js" defer></script>
   <script src="/workspace-ui.js" defer></script>
+  <script src="/editor.js" defer></script>
   <script src="/app.js" defer></script>
   <script src="/guide.js" defer></script>
 </head>
@@ -76,6 +77,7 @@
     </aside>
 
     <div class="app-main">
+      <div id="session-banner" class="session-banner hidden" role="alert"><span><strong>Session expired.</strong> Reload to continue. Text you typed is kept in this browser and will be offered back after reload.</span><button type="button" class="button button-outline" id="session-reload">Reload</button></div>
       <button type="button" class="mobile-menu icon-button" id="mobile-menu" aria-label="Open navigation" aria-expanded="false"><svg class="icon"><use href="#i-menu"></use></svg></button>
 
       <main id="view-library" class="page page-library">
@@ -91,22 +93,25 @@
             </div>
           </div>
 
+          <div class="continue-card hidden" id="continue-card"><div class="continue-text"><span class="continue-kicker">Continue where you left off</span><strong id="continue-title"></strong><span id="continue-meta" class="continue-meta"></span></div><button type="button" class="button button-primary" id="continue-open">Continue <svg class="icon"><use href="#i-arrow"></use></svg></button></div>
+
           <div class="stats-strip" aria-label="Workspace statistics">
             <div><span class="stat-number" id="stat-problems">—</span><span class="stat-label">Available problems</span></div>
-            <div><span class="stat-number" id="stat-attempts">—</span><span class="stat-label">Reasoning attempts</span></div>
-            <div><span class="stat-number" id="stat-assessments">—</span><span class="stat-label">Assessments</span></div>
+            <div><span class="stat-number" id="stat-attempts">—</span><span class="stat-label">Submitted PPCs</span></div>
+            <div><span class="stat-number" id="stat-assessments">—</span><span class="stat-label">Reviews</span></div>
             <div><span class="stat-number" id="stat-drafts">—</span><span class="stat-label">Saved PPC drafts</span></div>
           </div>
 
           <div class="library-section-head">
-            <div class="filter-set">
+            <div class="filter-set" id="filter-set">
+              <label class="library-search"><svg class="icon"><use href="#i-search"></use></svg><input id="library-search" type="search" placeholder="Search title, topic or ID" aria-label="Search problems by title, topic or ID" autocomplete="off"></label>
               <label class="select-wrap" aria-label="Filter difficulty"><svg class="icon"><use href="#i-filter"></use></svg><select id="filter-level"><option value="">All levels</option><option value="1">Level 1</option><option value="2">Level 2</option><option value="3">Level 3</option><option value="4">Level 4</option><option value="5">Level 5</option><option value="6">Level 6</option></select></label>
-              <label class="select-wrap" aria-label="Filter status"><select id="filter-status"><option value="">All statuses</option><option value="presented">Ready to solve</option><option value="evaluated">Evaluated</option><option value="attempted">Attempted</option></select></label>
-              <label class="select-wrap" aria-label="Filter topic"><select id="filter-topic"><option value="">All topics</option></select></label>
-              <label class="select-wrap" aria-label="Filter reasoning family"><select id="filter-family"><option value="">All families</option></select></label>
-              <label class="select-wrap" aria-label="Filter presentation"><select id="filter-presentation"><option value="">All formats</option><option value="story">Story</option><option value="direct">Direct</option></select></label>
+              <label class="select-wrap secondary-filter" aria-label="Filter status"><select id="filter-status"><option value="">All statuses</option><option value="presented">Ready to solve</option><option value="evaluated">Evaluated</option><option value="attempted">Attempted</option></select></label>
+              <label class="select-wrap secondary-filter" aria-label="Filter topic"><select id="filter-topic"><option value="">All topics</option></select></label>
+              <label class="select-wrap secondary-filter" aria-label="Filter reasoning family"><select id="filter-family"><option value="">All families</option></select></label>
+              <label class="select-wrap secondary-filter" aria-label="Filter presentation"><select id="filter-presentation"><option value="">All formats</option><option value="story">Story</option><option value="direct">Direct</option></select></label>
               <label class="select-wrap" aria-label="Filter progress"><select id="filter-progress"><option value="">All progress</option><option value="unattempted">Not attempted</option><option value="attempted">Attempted</option><option value="passed">Passed review</option><option value="eligible">Not revealed</option><option value="revealed">Reference revealed</option></select></label>
-              <div class="similar-picker" id="similar-picker">
+              <div class="similar-picker secondary-filter" id="similar-picker">
                 <div class="select-wrap">
                   <input id="filter-similar" type="hidden">
                   <input id="similar-query" type="search" role="combobox" aria-label="Find similar problems by challenge name or RACG number" aria-autocomplete="list" aria-expanded="false" aria-controls="similar-options" placeholder="Similar to any problem…" autocomplete="off">
@@ -115,10 +120,12 @@
                 <div id="similar-options" class="similar-options" role="listbox" aria-label="Matching challenges" hidden></div>
               </div>
               <label class="select-wrap" aria-label="Sort problems"><select id="filter-sort"><option value="newest">Newest</option><option value="oldest">Oldest</option><option value="difficulty_asc">Easy → hard</option><option value="difficulty_desc">Hard → easy</option><option value="topic">Topic order</option></select></label>
+              <button type="button" class="button button-outline more-filters-toggle" id="more-filters-toggle" aria-expanded="false" aria-controls="filter-set">More filters<span class="more-count" id="more-filters-count" hidden></span></button>
               <button type="button" class="button button-outline library-refresh" id="refresh-library" title="Reload newly published RACG problems">Refresh</button>
             </div>
           </div>
 
+          <div class="filter-summary"><div id="filter-chips" class="filter-chips" aria-label="Active filters"></div><span id="result-count" class="result-count" aria-live="polite"></span></div>
           <div class="problem-table">
             <div class="table-header"><span>CHALLENGE</span><span>TOPIC</span><span>DIFFICULTY</span><span>PROGRESS</span><span></span><span aria-label="Actions"></span></div>
             <div id="problem-list" class="problem-items" aria-live="polite"><div class="loading-state">Loading your archive…</div></div>
@@ -149,7 +156,7 @@
       <main id="view-problem" class="page page-problem hidden">
         <div class="problem-top">
           <button type="button" id="go-back" class="back-link"><svg class="icon"><use href="#i-chevron"></use></svg> All problems</button>
-          <div class="problem-top-right"><span class="save-indicator" id="save-status">Not saved yet</span><button type="button" id="save-draft" class="button button-outline"><svg class="icon"><use href="#i-save"></use></svg> Save draft</button></div>
+          <div class="problem-top-right"><span class="save-indicator" id="save-status">Not saved yet</span><span class="sr-only" id="save-announce" role="status" aria-live="polite"></span><button type="button" id="toggle-focus" class="button button-outline" aria-pressed="false" title="Hide the statement and write at full width">Focus</button><button type="button" id="export-draft" class="button button-outline" title="Download this draft as Markdown">Download</button><button type="button" id="save-draft" class="button button-outline"><svg class="icon"><use href="#i-save"></use></svg> Save draft</button></div>
         </div>
         <div class="problem-workspace">
           <section class="statement-panel" aria-label="Problem statement">
@@ -157,6 +164,7 @@
             <h1 id="problem-title">Problem title</h1>
             <div class="statement-toolbar"><span><svg class="icon"><use href="#i-book"></use></svg> Problem statement</span><span class="label-neutral" id="problem-progress">AVAILABLE</span></div>
             <p id="problem-review-note" class="review-only-note hidden">This problem is an authored draft awaiting independent verification. You can preview it and save a private PPC draft, but formal assessment and reference reveal are unavailable until release.</p>
+            <nav id="statement-nav" class="statement-nav hidden" aria-label="Statement sections"></nav>
             <article id="problem-statement" class="statement-content"></article>
             <div class="statement-footnote"><svg class="icon"><use href="#i-info"></use></svg> Your work is private. Completing a PPC draft does not automatically certify its correctness.</div>
           </section>
@@ -167,16 +175,19 @@
               <button id="reveal-reference" type="button" class="button button-outline hidden" title="Reveal the reference PPC">Reveal PPC</button>
             </div>
             <div class="editor-tabs" role="tablist" aria-label="PPC sections">
-              <button type="button" role="tab" id="tab-problem" data-section="problem" aria-selected="true" class="editor-tab active"><span>01</span> Problem</button>
-              <button type="button" role="tab" id="tab-procedure" data-section="procedure" aria-selected="false" class="editor-tab"><span>02</span> Procedure</button>
-              <button type="button" role="tab" id="tab-correctness" data-section="correctness" aria-selected="false" class="editor-tab"><span>03</span> Proof</button>
-              <button type="button" role="tab" id="tab-complexity" data-section="complexity" aria-selected="false" class="editor-tab"><span>04</span> Complexity</button>
+              <button type="button" role="tab" id="tab-problem" data-section="problem" aria-selected="true" aria-controls="ppc-panel" tabindex="0" class="editor-tab active"><span>01</span> Problem<i class="tab-state" aria-hidden="true"></i></button>
+              <button type="button" role="tab" id="tab-procedure" data-section="procedure" aria-selected="false" aria-controls="ppc-panel" tabindex="-1" class="editor-tab"><span>02</span> Procedure<i class="tab-state" aria-hidden="true"></i></button>
+              <button type="button" role="tab" id="tab-correctness" data-section="correctness" aria-selected="false" aria-controls="ppc-panel" tabindex="-1" class="editor-tab"><span>03</span> Proof<i class="tab-state" aria-hidden="true"></i></button>
+              <button type="button" role="tab" id="tab-complexity" data-section="complexity" aria-selected="false" aria-controls="ppc-panel" tabindex="-1" class="editor-tab"><span>04</span> Complexity<i class="tab-state" aria-hidden="true"></i></button>
             </div>
-            <div class="writing-area">
+            <div class="writing-area" id="ppc-panel" role="tabpanel" aria-labelledby="tab-problem">
               <div class="writing-head"><div><span class="section-kicker" id="section-kicker">P1 · FORMALIZATION</span><h3 id="section-title">Problem specification</h3><p id="section-description">Define inputs, assumptions, and the exact output relation.</p></div><button id="editor-open-guide" type="button" class="editor-guide-link"><svg class="icon"><use href="#i-book"></use></svg> Explain this section <span aria-hidden="true">↗</span></button></div>
+              <div class="editor-toolbar"><div class="mode-switch" role="group" aria-label="Editor mode"><button type="button" id="mode-write" class="mode-button active" aria-pressed="true">Write</button><button type="button" id="mode-preview" class="mode-button" aria-pressed="false">Preview</button></div><div class="toolbar-actions"><button type="button" id="insert-skeleton" class="tool-button" title="Insert an outline for this section">Insert outline</button><button type="button" id="toggle-symbols" class="tool-button" aria-expanded="false" aria-controls="symbol-palette">Symbols</button></div></div>
+              <div id="symbol-palette" class="symbol-palette hidden" role="group" aria-label="Insert a symbol"></div>
               <label class="sr-only" for="ppc-input">Your reasoning for this PPC section</label>
               <textarea id="ppc-input" spellcheck="true" placeholder="Begin by specifying the mathematical problem..." rows="17"></textarea>
-              <div class="editor-meter"><span id="character-count">0 characters</span><span>Markdown & mathematical notation supported as text</span></div>
+              <div id="ppc-preview" class="ppc-preview hidden" tabindex="0" aria-label="Rendered preview of this section"></div>
+              <div class="editor-meter"><span id="character-count">0 characters</span><span>Markdown with LaTeX: <code>\( … \)</code> inline, <code>\[ … \]</code> display · Tab inserts spaces; Esc then Tab leaves the box</span></div>
             </div>
             <div class="editor-footer">
               <div class="editor-tips"><svg class="icon"><use href="#i-info"></use></svg> Every section is preserved as you work.</div>
@@ -217,7 +228,7 @@
       </main>
 
       <main id="view-overview" class="page page-overview hidden">
-        <div class="guide-wrap"><button id="overview-back" type="button" class="back-link"><svg class="icon"><use href="#i-chevron"></use></svg> Problem library</button><div class="eyebrow"><span class="eyebrow-line"></span> THE SYSTEM</div><h1>Your progress</h1><p class="lead">The archive remembers what was attempted, without pretending that an unverified proof is correct.</p><div id="overview-details" class="overview-details"></div></div>
+        <div class="guide-wrap"><button id="overview-back" type="button" class="back-link"><svg class="icon"><use href="#i-chevron"></use></svg> Problem library</button><div class="eyebrow"><span class="eyebrow-line"></span> THE SYSTEM</div><h1>Your progress</h1><p class="lead">The archive remembers what was attempted, without pretending that an unverified proof is correct.</p><div id="overview-levels" class="overview-levels"></div><div id="overview-details" class="overview-details"></div></div>
       </main>
     </div>
   </div>

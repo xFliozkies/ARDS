@@ -553,6 +553,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._file("statement-renderer.js","text/javascript; charset=utf-8")
             if path=="/workspace-ui.js":
                 return self._file("workspace-ui.js","text/javascript; charset=utf-8")
+            if path=="/editor.js":
+                return self._file("editor.js","text/javascript; charset=utf-8")
             # Fixed, local-only vendor resources; never concatenate unchecked paths.
             if path in ("/vendor/markdown-it.min.js", "/vendor/katex.min.js"):
                 return self._file(path.lstrip("/"),"text/javascript; charset=utf-8")

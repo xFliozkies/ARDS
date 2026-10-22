@@ -16,7 +16,8 @@ const SECTION_PROMPTS={
   correctness:['What is the invariant or central lemma?','Why does it hold initially and remain true?','Why does termination imply the required answer?','How do you prove termination and, if needed, global optimality?'],
   complexity:['What does each input-size parameter represent?','What operations dominate running time?','What extra arrays, maps or recursion frames are needed?','Which cost model and implementation limits apply?']
 };
-const state={token:'',problems:[],page:1,perPage:12,total:0,pages:1,problemRequestId:0,current:null,section:'problem',draft:null,loadedDraft:null,view:'library',saveTimer:null,busy:false,lastSelected:localStorage.getItem('ards-last-selected')||null};
+const state={token:'',problems:[],page:1,perPage:12,total:0,pages:1,problemRequestId:0,current:null,section:'problem',draft:null,loadedDraft:null,view:'library',saveTimer:null,busy:false,lastSelected:localStorage.getItem('ards-last-selected')||null,
+  mode:'write',saveKind:'idle',saveText:'Not saved yet',savedAt:0,saving:false,resave:false,savePromise:null,mirrorTimer:null,reloading:false,search:''};
 let toastTimer=null;
 let comparisonProblems=[];
 let similarActive=-1;
@@ -24,12 +25,25 @@ let similarActive=-1;
 function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function notify(message,isError=false){const el=$('toast');el.textContent=message;el.classList.toggle('error',isError);el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),3600);}
 async function api(url,options={}){
-  const response=await fetch(url,{cache:'no-store',credentials:'same-origin',
-    ...options,headers:{...(options.body?{'Content-Type':'application/json','X-ARDS-Session':state.token}:{}),...(options.headers||{})}});
+  let response;
+  try{
+    response=await fetch(url,{cache:'no-store',credentials:'same-origin',
+      ...options,headers:{...(options.body?{'Content-Type':'application/json','X-ARDS-Session':state.token}:{}),...(options.headers||{})}});
+  }catch{throw Object.assign(Error('Cannot reach the local ARDS server'),{network:true});}
   let value;
   try{value=await response.json();}catch{throw Error('Unexpected server response');}
-  if(!response.ok)throw Error(value.error||'Request failed');
+  if(!response.ok){const err=Error(value.error||'Request failed');err.status=response.status;throw err;}
   return value;
+}
+/* A write rejected for a missing/old session token or bad origin means the local
+   server was restarted. Reveal also returns 403 for eligibility, so match the message. */
+function handleWriteError(err){
+  if(err&&err.status===403&&/session token|request origin/i.test(err.message||'')){
+    $('session-banner').classList.remove('hidden');
+    writeMirror();
+    return true;
+  }
+  return false;
 }
 function markActive(id){document.querySelectorAll('.nav-link').forEach(x=>x.classList.toggle('active',x.id===id));}
 function switchView(name){
@@ -146,7 +160,8 @@ async function loadProblems(search='',{resetPage=false,scrollToList=false}={}){
   const query=new URLSearchParams();
   query.set('page',state.page);
   query.set('per_page',state.perPage);
-  if(search)query.set('q',search);
+  const term=search||state.search;
+  if(term)query.set('q',term);
   for(const [control,key] of [
     ['filter-level','difficulty'],['filter-status','status'],
     ['filter-topic','topic'],['filter-family','family'],
@@ -269,6 +284,166 @@ function showSimilar(id){
 async function loadOverview(){
   try{refreshStats(await api('/api/overview'));}catch(err){notify('Could not load workspace overview: '+err.message,true);}
 }
+/* ---- Local mirror: the latest unsaved text per problem, kept in this browser only.
+   It holds the student's own words and is cleared once the server has them. ---- */
+const MIRROR_PREFIX='ards-mirror:';
+const mirrorKey=id=>MIRROR_PREFIX+id;
+function clearMirror(id){try{localStorage.removeItem(mirrorKey(id));}catch{}}
+function writeMirror(){
+  if(!state.current||!state.draft)return;
+  try{
+    if(JSON.stringify(state.draft)===state.loadedDraft)clearMirror(state.current.id);
+    else localStorage.setItem(mirrorKey(state.current.id),JSON.stringify({draft:state.draft,at:Date.now()}));
+  }catch{}
+}
+function offerLocalMirror(id,serverDraft){
+  let saved=null;
+  try{saved=JSON.parse(localStorage.getItem(mirrorKey(id))||'null');}catch{}
+  if(!saved||!saved.draft)return;
+  const local={};
+  SECTIONS.forEach(s=>{local[s]=typeof saved.draft[s]==='string'?saved.draft[s]:'';});
+  if(JSON.stringify(local)===state.loadedDraft){clearMirror(id);return;}
+  const serverTime=Date.parse(serverDraft&&serverDraft.updated_at);
+  if(Number.isFinite(serverTime)&&saved.at&&saved.at<=serverTime){clearMirror(id);return;}
+  const body=document.createElement('p');
+  body.textContent='This browser holds text for this problem from '+(saved.at?new Date(saved.at).toLocaleString():'an earlier session')+
+    ' that never reached the saved draft. Which version do you want to keep?';
+  window.ARDSUI.openModal('Recover unsaved text?',id,body,[
+    {label:'Use saved draft',action:()=>clearMirror(id)},
+    {label:'Use browser copy',primary:true,action:()=>{
+      state.draft=local;
+      showSection(state.section,{skipPreserve:true});
+      scheduleSave();
+    }}
+  ]);
+}
+
+/* ---- Save state ---- */
+function relativeTime(ms){
+  const minutes=Math.floor((Date.now()-ms)/60000);
+  if(minutes<1)return 'just now';
+  if(minutes<60)return minutes+' min ago';
+  return Math.floor(minutes/60)+' h ago';
+}
+function renderSaveStatus(){
+  const labels={unsaved:'Unsaved changes',saving:'Saving…',failed:'Save failed – retry'};
+  const text=state.saveKind==='saved'?'Saved '+relativeTime(state.savedAt):(labels[state.saveKind]||state.saveText||'Not saved yet');
+  $('save-status').textContent=text;
+  $('save-status').dataset.state=state.saveKind;
+  return text;
+}
+function setSaveState(kind,text){
+  const changed=kind!==state.saveKind;
+  state.saveKind=kind;
+  if(text!==undefined)state.saveText=text;
+  if(kind==='saved')state.savedAt=Date.now();
+  const label=renderSaveStatus();
+  // Announce only meaningful transitions, never the passing of time.
+  if(changed&&(kind==='saved'||kind==='failed'))$('save-announce').textContent=label;
+}
+setInterval(()=>{if(state.saveKind==='saved')renderSaveStatus();},30000);
+
+/* ---- Section tabs, preview, symbols, outline ---- */
+const TAB_NAMES={problem:'01 Problem',procedure:'02 Procedure',correctness:'03 Proof',complexity:'04 Complexity'};
+const SECTION_LABELS={problem:'P1 · Problem specification',procedure:'P2 · Proposed algorithm',correctness:'C · Correctness proof',complexity:'K · Complexity analysis'};
+function updateCharCount(){$('character-count').textContent=$('ppc-input').value.length+' characters';}
+function updateTabStates(){
+  document.querySelectorAll('.editor-tab').forEach(btn=>{
+    const section=btn.dataset.section;
+    const text=state.draft?.[section]||'';
+    const filled=text.trim().length>0;
+    const mark=btn.querySelector('.tab-state');
+    if(mark){mark.textContent=filled?'✓':'○';mark.dataset.filled=filled?'1':'0';}
+    btn.setAttribute('aria-label',TAB_NAMES[section]+', '+(filled?text.length+' characters':'empty'));
+  });
+}
+function onTabKeydown(e){
+  const tabs=[...document.querySelectorAll('.editor-tab')];
+  const i=tabs.indexOf(e.currentTarget);
+  let n;
+  if(e.key==='ArrowRight')n=(i+1)%tabs.length;
+  else if(e.key==='ArrowLeft')n=(i-1+tabs.length)%tabs.length;
+  else if(e.key==='Home')n=0;
+  else if(e.key==='End')n=tabs.length-1;
+  else return;
+  e.preventDefault();
+  showSection(tabs[n].dataset.section);
+  tabs[n].focus();
+}
+function renderPreview(){
+  preserveText();
+  const box=$('ppc-preview');
+  box.replaceChildren();
+  const text=$('ppc-input').value;
+  if(!text.trim()){
+    const p=document.createElement('p');p.className='preview-empty';
+    p.textContent='Nothing to preview yet. Switch to Write and add some text.';
+    box.append(p);return;
+  }
+  try{box.append(window.ARDSStatement.rich(text));}
+  catch{const pre=document.createElement('pre');pre.className='preview-fallback';pre.textContent=text;box.append(pre);}
+}
+function setMode(mode){
+  state.mode=mode;
+  const preview=mode==='preview';
+  $('mode-write').classList.toggle('active',!preview);
+  $('mode-write').setAttribute('aria-pressed',String(!preview));
+  $('mode-preview').classList.toggle('active',preview);
+  $('mode-preview').setAttribute('aria-pressed',String(preview));
+  $('ppc-input').classList.toggle('hidden',preview);
+  $('ppc-preview').classList.toggle('hidden',!preview);
+  $('insert-skeleton').disabled=preview;
+  $('toggle-symbols').disabled=preview;
+  if(preview){closeSymbols();renderPreview();}
+}
+function closeSymbols(){
+  $('symbol-palette').classList.add('hidden');
+  $('toggle-symbols').setAttribute('aria-expanded','false');
+}
+function toggleSymbols(){
+  const open=$('symbol-palette').classList.toggle('hidden')===false;
+  $('toggle-symbols').setAttribute('aria-expanded',String(open));
+  if(open&&!$('symbol-palette').childElementCount)window.ARDSEditor.buildPalette($('symbol-palette'),$('ppc-input'));
+}
+function onPaletteKeydown(e){
+  if(e.key==='Escape'){e.preventDefault();e.stopPropagation();closeSymbols();$('toggle-symbols').focus();return;}
+  if(e.key!=='ArrowRight'&&e.key!=='ArrowLeft')return;
+  const buttons=[...$('symbol-palette').querySelectorAll('button')];
+  const i=buttons.indexOf(document.activeElement);
+  if(i<0)return;
+  e.preventDefault();
+  buttons[(i+(e.key==='ArrowRight'?1:-1)+buttons.length)%buttons.length].focus();
+}
+function insertOutline(){
+  const ta=$('ppc-input');
+  const text=window.ARDSEditor.SKELETONS[state.section];
+  if(!text)return;
+  const insert=()=>{
+    ta.focus();
+    if(!ta.value.trim())ta.setSelectionRange(0,ta.value.length);
+    window.ARDSEditor.insertAtCaret(ta,text);
+  };
+  if(!ta.value.trim()){insert();return;}
+  const body=document.createElement('p');
+  body.textContent='This section already has text. The outline will be inserted at your cursor; nothing is replaced or deleted.';
+  window.ARDSUI.openModal('Insert outline here?',META[state.section].kicker,body,[
+    {label:'Cancel',action:()=>{}},
+    {label:'Insert at cursor',primary:true,action:insert}
+  ]);
+  $('workspace-dialog-actions').querySelector('button')?.focus();
+}
+function exportDraft(){
+  if(!state.current||!state.draft)return;
+  preserveText();
+  const parts=['# '+state.current.id+' — '+(state.current.title||'Untitled problem'),'','_Draft exported from ARDS Studio. Not graded._',''];
+  for(const s of SECTIONS)parts.push('## '+SECTION_LABELS[s],'',state.draft[s].trimEnd()||'_(empty)_','');
+  const blob=new Blob([parts.join('\n')],{type:'text/markdown;charset=utf-8'});
+  const link=document.createElement('a');
+  link.href=URL.createObjectURL(blob);
+  link.download=String(state.current.id).replace(/[^A-Za-z0-9._-]/g,'_')+'-ppc-draft.md';
+  document.body.append(link);link.click();link.remove();
+  setTimeout(()=>URL.revokeObjectURL(link.href),1000);
+}
 function preserveText(){if(state.draft)state.draft[state.section]=$('ppc-input').value;}
 function allFilled(){return Boolean(state.draft&&SECTIONS.every(s=>state.draft[s].trim()));}
 function showSection(section,{skipPreserve=false}={}){
@@ -280,12 +455,16 @@ function showSection(section,{skipPreserve=false}={}){
   $('section-description').textContent=meta.description;
   $('ppc-input').placeholder=meta.placeholder;
   $('ppc-input').value=state.draft?.[section]||'';
-  $('character-count').textContent=$('ppc-input').value.length+' characters';
+  updateCharCount();
   document.querySelectorAll('.editor-tab').forEach(btn=>{
     const active=btn.dataset.section===section;
     btn.classList.toggle('active',active);
     btn.setAttribute('aria-selected',active?'true':'false');
+    btn.tabIndex=active?0:-1;
   });
+  $('ppc-panel').setAttribute('aria-labelledby','tab-'+section);
+  updateTabStates();
+  if(state.mode==='preview')renderPreview();
   $('next-section').textContent='';
   const next=SECTIONS[(SECTIONS.indexOf(section)+1)%SECTIONS.length];
   $('next-section').append('Next: '+(next==='correctness'?'Proof':META[next].title.split(' ')[0])+' ');
@@ -312,18 +491,20 @@ async function openProblem(id){
     $('submit-ppc').title=problem.review_only?'Under review: submissions are disabled until verified release':'';
     $('submit-ppc').classList.toggle('hidden',Boolean(problem.review_only));
     $('independent-attest').closest('label').classList.toggle('hidden',Boolean(problem.review_only));
-    $('save-status').textContent=problem.review_only?'Under review · private drafts can be saved':'Not saved yet';
     $('reveal-reference').classList.toggle('hidden',!problem.reference_available);
     $('reveal-reference').textContent=problem.reference_revealed?'View PPC':'Reveal PPC';
     $('independent-attest').checked=false;
     $('independent-attest').disabled=Boolean(problem.review_only||problem.reference_revealed||problem.attempt_count>0);
     $('independent-attest').closest('label').classList.toggle('disabled',$('independent-attest').disabled);
-    $('save-status').textContent=draft.updated_at?'Last draft: '+new Date(draft.updated_at).toLocaleDateString():problem.review_only?'Review-only · private drafts can be saved':'Not saved yet';
+    state.savedAt=0;
+    setSaveState('idle',draft.updated_at?'Last draft: '+new Date(draft.updated_at).toLocaleDateString():problem.review_only?'Review-only · private drafts can be saved':'Not saved yet');
     showSection('problem',{skipPreserve:true});
+    setMode('write');
     switchView('problem');
     document.querySelector('.statement-panel').scrollTop=0;
     document.querySelector('.editor-panel').scrollTop=0;
     history.replaceState(null,'','#/problem/'+encodeURIComponent(id));
+    offerLocalMirror(id,draft);
   }catch(err){notify('Could not open problem: '+err.message,true);}
 }
 function revealReference(){
@@ -358,31 +539,84 @@ async function loadReference(id){
 async function saveDraft(silent=false){
   if(!state.current||!state.draft)return;
   preserveText();
-  const serialized=JSON.stringify(state.draft);
-  if(serialized===state.loadedDraft){if(!silent)notify('Draft is already saved');return;}
-  try{
-    const result=await api('/api/drafts/'+encodeURIComponent(state.current.id),
-        {method:'POST',body:serialized});
-    state.loadedDraft=serialized;
-    $('save-status').textContent='Saved just now';
-    if(!silent)notify('Your PPC draft has been saved.');
-    loadOverview();
-  }catch(err){$('save-status').textContent='Save failed';notify('Draft save failed: '+err.message,true);}
+  if(JSON.stringify(state.draft)===state.loadedDraft){
+    if(!silent)notify('Draft is already saved');
+    // Edited back to what the server already has: the label must not stay on "Unsaved".
+    if(state.saveKind==='unsaved'){const prev=state.savedAt;setSaveState(prev?'saved':'idle');state.savedAt=prev;renderSaveStatus();}
+    writeMirror();
+    return;
+  }
+  // One save at a time. A save requested meanwhile is repeated afterwards with the newest text,
+  // and callers (such as opening another problem) await the whole chain.
+  if(state.saving){state.resave=true;return state.savePromise;}
+  state.saving=true;
+  state.savePromise=(async()=>{
+    try{
+      do{
+        state.resave=false;
+        const id=state.current.id;
+        const serialized=JSON.stringify(state.draft);
+        if(serialized===state.loadedDraft)break;
+        setSaveState('saving');
+        try{
+          await api('/api/drafts/'+encodeURIComponent(id),{method:'POST',body:serialized});
+        }catch(err){
+          setSaveState('failed');
+          writeMirror();
+          if(!handleWriteError(err))notify('Draft save failed: '+err.message,true);
+          return;
+        }
+        state.loadedDraft=serialized;
+        setSaveState(JSON.stringify(state.draft)===serialized?'saved':'unsaved');
+        writeMirror();
+        if(!silent)notify('Your PPC draft has been saved.');
+        loadOverview();
+      }while(state.resave);
+    }finally{state.saving=false;}
+  })();
+  return state.savePromise;
 }
 function scheduleSave(){
   preserveText();
-  $('save-status').textContent='Unsaved changes';
-  $('submit-ppc').disabled=!allFilled();
-  $('character-count').textContent=$('ppc-input').value.length+' characters';
+  setSaveState('unsaved');
+  $('submit-ppc').disabled=Boolean(state.current?.review_only)||!allFilled();
+  updateCharCount();
+  updateTabStates();
   clearTimeout(state.saveTimer);
   state.saveTimer=setTimeout(()=>saveDraft(true),1800);
+  clearTimeout(state.mirrorTimer);
+  state.mirrorTimer=setTimeout(writeMirror,300);
 }
 async function submitPPC(){
   if(state.current?.review_only)return notify('This problem is under review. Save a private draft; formal assessment opens after verified release.',true);
   preserveText();
   if(!allFilled())return notify('Complete every PPC section before submitting.',true);
-  if(!confirm('Submit this PPC to the permanent ARDS attempt history? Submitting does not automatically grade correctness.'))return;
-  if(state.busy)return;
+  const content=document.createElement('div');
+  content.className='submit-confirmation';
+  const list=document.createElement('ul');
+  list.className='submit-sections';
+  for(const s of SECTIONS){
+    const li=document.createElement('li');
+    const length=state.draft[s].length;
+    li.textContent=SECTION_LABELS[s]+' — '+(state.draft[s].trim()?'filled ('+length+' characters)':'empty');
+    list.append(li);
+  }
+  const para=text=>{const p=document.createElement('p');p.textContent=text;return p;};
+  content.append(list,
+    para('Independent, without hints: '+($('independent-attest').checked?'ticked.':'not ticked.')),
+    para(state.current?.attempt_count>0
+      ?'This will be recorded as a later submission (a revision) in the permanent attempt history.'
+      :'This will be recorded as your original attempt in the permanent attempt history.'),
+    para('Submitting saves your PPC for review. It is not auto-graded, and no correctness result is claimed.'));
+  window.ARDSUI.openModal('Submit this PPC?',state.current.id+' · '+(state.current.title||''),content,[
+    {label:'Cancel',action:()=>{}},
+    {label:'Submit PPC',primary:true,action:performSubmit}
+  ]);
+  // Safe default: Enter must not submit; focus starts on Cancel.
+  $('workspace-dialog-actions').querySelector('button')?.focus();
+}
+async function performSubmit(){
+  if(state.busy||!state.current||!state.draft)return;
   state.busy=true;$('submit-ppc').disabled=true;
   try{
     const response=await api('/api/submissions/'+encodeURIComponent(state.current.id),
@@ -390,9 +624,9 @@ async function submitPPC(){
     notify(response.independent?'Independent first attempt recorded; it still requires correctness assessment.':'PPC recorded for review; no automatic pass is claimed.');
     $('independent-attest').disabled=true;
     state.loadedDraft=JSON.stringify(state.draft);
-    $('save-status').textContent='Submitted · '+response.stage;
+    setSaveState('idle','Submitted · '+response.stage);
     await loadOverview();
-  }catch(err){notify('Could not submit PPC: '+err.message,true);}
+  }catch(err){if(!handleWriteError(err))notify('Could not submit PPC: '+err.message,true);}
   finally{state.busy=false;$('submit-ppc').disabled=Boolean(state.current?.review_only)||!allFilled();}
 }
 function goLibrary(){
@@ -447,6 +681,35 @@ function bind(){
   });
   document.querySelectorAll('.editor-tab').forEach(btn=>btn.addEventListener('click',()=>showSection(btn.dataset.section)));
   $('ppc-input').addEventListener('input',scheduleSave);
+  window.ARDSEditor.bindTextarea($('ppc-input'));
+  $('mode-write').addEventListener('click',()=>{setMode('write');$('ppc-input').focus();});
+  $('mode-preview').addEventListener('click',()=>setMode('preview'));
+  $('toggle-symbols').addEventListener('click',toggleSymbols);
+  $('symbol-palette').addEventListener('keydown',onPaletteKeydown);
+  $('insert-skeleton').addEventListener('click',insertOutline);
+  document.querySelectorAll('.editor-tab').forEach(btn=>btn.addEventListener('keydown',onTabKeydown));
+  $('export-draft').addEventListener('click',exportDraft);
+  $('toggle-focus').addEventListener('click',()=>{
+    const on=$('view-problem').classList.toggle('focus-mode');
+    $('toggle-focus').setAttribute('aria-pressed',String(on));
+    $('toggle-focus').textContent=on?'Show statement':'Focus';
+  });
+  $('session-reload').addEventListener('click',()=>{state.reloading=true;location.reload();});
+  let librarySearchTimer=null;
+  $('library-search').addEventListener('input',e=>{
+    clearTimeout(librarySearchTimer);
+    librarySearchTimer=setTimeout(()=>{
+      state.search=e.target.value.trim();
+      loadProblems('',{resetPage:true}).catch(err=>notify(err.message,true));
+    },250);
+  });
+  window.addEventListener('beforeunload',e=>{
+    preserveText();
+    writeMirror();
+    if(state.reloading||!state.current||!state.draft)return;
+    if(JSON.stringify(state.draft)!==state.loadedDraft){e.preventDefault();e.returnValue='';}
+  });
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'){preserveText();writeMirror();}});
   $('next-section').addEventListener('click',()=>showSection(SECTIONS[(SECTIONS.indexOf(state.section)+1)%SECTIONS.length]));
   $('save-draft').addEventListener('click',()=>saveDraft(false));
   $('submit-ppc').addEventListener('click',submitPPC);

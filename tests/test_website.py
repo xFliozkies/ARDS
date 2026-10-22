@@ -67,6 +67,18 @@ class WebsiteTests(unittest.TestCase):
         except urllib.error.HTTPError as err:
             return err.code,err.read(),err.headers
 
+    def test_editor_script_is_served_locally_and_loaded_by_the_page(self):
+        status,body,headers=self.request('/editor.js')
+        self.assertEqual(status,200)
+        self.assertIn('javascript',headers.get('Content-Type',''))
+        self.assertIn("script-src 'self'",headers.get('Content-Security-Policy',''))
+        source=body.decode()
+        self.assertNotIn('http://',source)
+        self.assertNotIn('https://',source)
+        self.assertIn('window.ARDSEditor',source)
+        _,page,_=self.request('/')
+        self.assertIn('src="/editor.js"',page.decode())
+
     def test_registered_unverified_batch_is_hidden_from_learner(self):
         import memory,ards2,ards_batch
         from test_ards2 import body
