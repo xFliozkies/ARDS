@@ -1,0 +1,49 @@
+{
+  "reviewer_id": "GPT-6 independent reviewer: mirror-prefix text I/O v2",
+  "independently_derived": true,
+  "decision": "approve",
+  "specification_analysis": "The learner-visible description defines a prefix in everyday terms and explicitly explains the palindrome property without assuming string-algorithm expertise. Every input has one lowercase string of letters a, b, and c, and the output is one integer L, the length of the longest palindrome that starts at the first character. The input has no leading test-case count and sample pairs match plain stdin/stdout.",
+  "correctness_analysis": "The author's procedure checks candidate lengths from longest to shortest and tests symmetric pairs. Pair equality characterizes a palindrome, and the first passing length is maximum. A one-character palindrome always exists. My independently derived KMP candidate computes the longest prefix of s equal to a suffix of reverse(s), by using s + '#' + reverse(s); because the separator does not occur in s, this correspondence is precisely the longest palindromic prefix. My second implementation checks each prefix directly. The revised reference PPC correctly spells out the inner-pair invariant, the outer rejected-length invariant, termination at length one, feasibility, and optimality. These obligations were reviewed separately from the executable reference candidate and literal oracle.",
+  "complexity_analysis": "The author's descending pair comparisons require O(n squared) worst-case time across all candidate prefix lengths and O(1) extra space. My independently derived prefix-function solution runs in O(n) time and O(n) auxiliary space. The literal direct oracle takes O(n squared) time and O(n) peak space due to slices, with n at most 2000.",
+  "edge_case_analysis": "Independent tests cover single-letter strings, two-letter matches and mismatches, odd and even full palindromes, periodic words, nearly palindromic strings, maximum-length uniform strings, maximum-length alternating strings, strings with a single trailing mismatch, and deterministic generated palindrome/non-palindrome cases. Text I/O conversion is separately exercised on each of the official samples, including one-character-valid-prefix and three-character-valid-prefix cases.",
+  "independence_statement": "This review derives a linear prefix-function algorithm and a separate literal exhaustive-prefix oracle directly from the solver-visible mathematical definition, rather than transcribing the author's procedure. Neither implementation imports, executes, parses, or translates the author's private answer key. Code and input generation are independently written for this review.",
+  "limitations": "Finite differential testing does not establish correctness for every valid string; the correctness argument has been reviewed in natural language but has no theorem-kernel certificate. The local review runner executes trusted reviewer-authored code, not contestant-submitted code, and its deterministic generated tests are a bounded sample of the legal input domain. The input decoder and output formatter are independently executable, but tests do not exhaust the full length-2000 string domain, and the natural language proof is not Lean certified.",
+  "specification_review": {
+    "difficulty": 1,
+    "comprehension_policy": "accessible_without_topic_prerequisites",
+    "symbols_and_objects": "Input is a string and output is a length; the prefix is an initial substring and the palindrome property is described directly without algorithmic prerequisites.",
+    "terminology_and_prerequisites": "At Level 1, the reader must understand what it means for characters to read the same in both directions, without prior knowledge of string algorithms.",
+    "io_and_output_validity": "Exactly one lowercase string appears in the input, without a leading case count; the output is a decimal length; each sample is plain stdin and stdout.",
+    "ambiguity_and_edge_cases": "One-character inputs are always valid; fully palindromic and partially palindromic cases have unique maximal lengths and the empty string is excluded.",
+    "verdict": "pass",
+    "level_profile": "L1_plain_foundations",
+    "student_text_quote": "A prefix is the first L characters of the given string",
+    "level_specific_evidence": "The beginner-facing Level 1 statement explicitly says that a prefix comprises the first L characters without skipping, and defines a palindrome as reading identically from either direction. Thus the reader can evaluate the objective without knowing specialized string algorithms, and the one-token input and one-number output are also unambiguous. Neither the prefix-function method nor any solution procedure appears in the student description."
+  },
+  "ppc_review": {
+    "verdict": "pass",
+    "input_domain_quote": "Let \\(D\\) contain nonempty strings \\(s=(s_1,\\ldots,s_n)\\) with one-based positions",
+    "output_relation_quote": "\\forall j\\in[1,\\lfloor L/2\\rfloor],\\ s_j=s_{L+1-j}",
+    "claim_quote": "For every \\(s\\in D\\), P2 terminates and returns the maximum prefix length satisfying P1.",
+    "reasoning_quote": "This is precisely the predicate in P1, so every accepted length is valid.",
+    "termination_quote": "There are at most \\(n\\) candidate lengths, each with at most \\(\\lfloor L/2\\rfloor\\) finite comparisons.",
+    "domain_and_output_analysis": "The P1 domain fixes the string alphabet, the range of n, and one-based indices. The exact output is the maximum admissible prefix length defined by pairwise equality. This has a valid length-one case and an exact decimal output convention.",
+    "method_and_logical_justification": "The proof uses a complete descending search argument instead of forcing a loop invariant. Pairwise equality is an iff characterization of a palindrome, so every rejection witnesses non-feasibility; the first accepted candidate is therefore valid and optimal.",
+    "termination_and_boundaries": "Each comparison loop is finite because the prefix length L is at most n, and the outer descending enumeration has at most n iterations. For n=1, L=1 is accepted. For any nonempty string the length-one prefix is valid; no impossible output is required.",
+    "limitations": "The reviewer evaluates the written P1-to-C alignment and compares independent algorithms against a finite oracle. These checks do not constitute a formal theorem-kernel certification or universally prove that no wording ambiguity remains.",
+    "all_p1_obligations_covered": true,
+    "obligation_mapping": [
+      {
+        "p1_quote": "\\forall j\\in[1,\\lfloor L/2\\rfloor],\\ s_j=s_{L+1-j}",
+        "c_quote": "This is precisely the predicate in P1, so every accepted length is valid.",
+        "justification": "The same mirrored-character equality predicate is tested for every candidate length. The iff argument in C proves that the first accepted candidate satisfies the formal validity condition stated in P1."
+      },
+      {
+        "p1_quote": "A one-character prefix always satisfies the relation, so a valid result exists.",
+        "c_quote": "The candidate \\(L=1\\) vacuously satisfies the predicate, so the search always returns an answer even for \\(n=1\\).",
+        "justification": "The proof's length-one boundary establishes nonempty feasibility for every legal input, as P1 requires. The descending search cannot exhaust all candidates without finding that valid one."
+      }
+    ],
+    "math_presentation_analysis": "I inspected the private P1 and C Markdown source. Both contain explicit LaTeX \\(...\\) inline mathematical expressions and \\[...\\] centered mathematical definitions; C has theorem, candidate validity, optimality, and termination paragraphs. These are meaningful displayed formulae with a finite, explicitly indexed output predicate, not a flat unformatted proof."
+  }
+}

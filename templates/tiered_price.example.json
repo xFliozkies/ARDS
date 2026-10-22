@@ -1,0 +1,41 @@
+{
+  "title": "Museum Ticket Discount",
+  "statement": "# Museum Ticket Discount\n\nYou buy N tickets. Each costs 60 coins. If N is at least 4, every ticket instead costs 45 coins. Output the total cost.\n\nInput: one integer N (1 <= N <= 10).\n\nOutput: one integer, the total price.\n\nExample: input `4`, output `180`.",
+  "difficulty_estimate": 1,
+  "patterns": [
+    "F02",
+    "F03"
+  ],
+  "provenance": "original ARDS 2.0 illustrative fixture",
+  "model": {
+    "inputs": {
+      "N": "integer 1..10"
+    },
+    "hidden_variables": [],
+    "constraints": [
+      "1 <= N <= 10",
+      "N >= 4 implies unit price 45; otherwise 60"
+    ],
+    "objective": "Compute the total price",
+    "family": "tiered_price",
+    "parameters": {
+      "threshold": 4,
+      "full": 60,
+      "discounted": 45,
+      "min_n": 1,
+      "max_n": 10
+    }
+  },
+  "reference_solution": "Output N * (45 if N >= 4 else 60). Time O(1), extra space O(1).",
+  "proof": "Every purchased ticket has the same applicable unit price by the statement. There are exactly N tickets, so multiplying the applicable price by N gives the total.",
+  "samples": [
+    {
+      "input": "3\n",
+      "output": "180\n"
+    },
+    {
+      "input": "4\n",
+      "output": "180\n"
+    }
+  ]
+}

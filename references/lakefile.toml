@@ -1,0 +1,6 @@
+name = "ppc3_examples"
+version = "0.1.0"
+defaultTargets = ["PPC3Examples"]
+
+[[lean_lib]]
+name = "PPC3Examples"

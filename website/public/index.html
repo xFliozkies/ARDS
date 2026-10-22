@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#faf9f6">
+  <meta name="description" content="A dedicated workspace for mathematical reasoning, programming challenges, and formal PPC solutions.">
+  <title>ARDS — Reasoning Workspace</title>
+  <link rel="stylesheet" href="/app.css">
+  <link rel="stylesheet" href="/guide.css">
+  <link rel="stylesheet" href="/typography.css">
+  <link rel="stylesheet" href="/workspace.css">
+  <link rel="stylesheet" href="/vendor/katex.min.css">
+  <script src="/vendor/markdown-it.min.js" defer></script>
+  <script src="/vendor/katex.min.js" defer></script>
+  <script src="/statement-renderer.js" defer></script>
+  <script src="/workspace-ui.js" defer></script>
+  <script src="/app.js" defer></script>
+  <script src="/guide.js" defer></script>
+</head>
+<body>
+  <svg class="sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 4.5c3-1.2 5.5-1.1 8 0.5 2.5-1.6 5-1.7 8-.5v14c-3-1.2-5.5-1.1-8 .5-2.5-1.6-5-1.7-8-.5z"/><path d="M12 5v14"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-7-7 7 7-7 7"/></symbol>
+    <symbol id="i-pencil" viewBox="0 0 24 24"><path d="m14.5 5.5 4 4M4 20l4.7-.8L20 7.9a2.1 2.1 0 0 0-4-4L4.8 15.2z"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-archive" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="5" rx="1.5"/><path d="M5 9v11h14V9M10 14h4"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v6l4 2"/></symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24"><path d="m12 2 1.9 6.1L20 10l-6.1 1.9L12 18l-1.9-6.1L4 10l6.1-1.9zM19 17l.6 1.5L21 19l-1.4.5L19 21l-.6-1.5L17 19l1.4-.5z"/></symbol>
+    <symbol id="i-notes" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="M5 5l14 14M19 5 5 19"/></symbol>
+    <symbol id="i-filter" viewBox="0 0 24 24"><path d="M4 7h16M7 12h10M10 17h4"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M6 2h8l5 5v15H6zM14 2v6h5M9 12h6M9 16h6"/></symbol>
+    <symbol id="i-terminal" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m7 9 3 3-3 3M12 16h5"/></symbol>
+    <symbol id="i-save" viewBox="0 0 24 24"><path d="M4 3h14l3 3v15H3V3zM7 3v7h10V3M7 21v-8h10v8"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></symbol>
+  </svg>
+
+  <div class="app" id="app">
+    <aside class="sidebar" id="sidebar" aria-label="Main navigation">
+      <div class="brand">
+        <button type="button" id="collapse-sidebar" class="sidebar-collapse icon-button" title="Collapse sidebar" aria-label="Collapse sidebar" aria-expanded="true"><svg class="icon"><use href="#i-menu"></use></svg></button>
+        <div class="brand-symbol" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+        <div class="brand-wordmark"><strong>ards<span class="brand-dot">.</span></strong></div>
+      </div>
+
+      <button class="global-search" type="button" id="open-command" aria-label="Search problems">
+        <svg class="icon"><use href="#i-search"></use></svg><span>Search anything...</span><kbd>/</kbd>
+      </button>
+
+      <div class="nav-group">
+        <p class="nav-label">WORKSPACE</p>
+        <button class="nav-link active" id="nav-library" type="button">
+          <svg class="icon"><use href="#i-book"></use></svg><span>Problem library</span>
+          <span class="nav-count" id="sidebar-count">—</span>
+        </button>
+        <button class="nav-link" id="nav-drafts" type="button">
+          <svg class="icon"><use href="#i-pencil"></use></svg><span>My PPC workspace</span>
+        </button>
+      </div>
+
+      <div class="nav-group">
+        <p class="nav-label">SYSTEM</p>
+        <button class="nav-link" type="button" id="nav-overview">
+          <svg class="icon"><use href="#i-grid"></use></svg><span>Overview</span>
+        </button>
+        <button class="nav-link" type="button" id="nav-method">
+          <svg class="icon"><use href="#i-notes"></use></svg><span>The PPC framework</span>
+        </button>
+      </div>
+
+    </aside>
+
+    <div class="app-main">
+      <button type="button" class="mobile-menu icon-button" id="mobile-menu" aria-label="Open navigation" aria-expanded="false"><svg class="icon"><use href="#i-menu"></use></svg></button>
+
+      <main id="view-library" class="page page-library">
+        <div class="library-wrap">
+          <div class="page-heading">
+            <div class="eyebrow"><span class="eyebrow-line"></span> Practice workspace</div>
+            <div class="heading-row">
+              <div>
+                <h1>Algorithm practice</h1>
+                <p class="lead">Browse challenges, develop algorithms, and write PPC solutions in one workspace.</p>
+              </div>
+
+            </div>
+          </div>
+
+          <div class="stats-strip" aria-label="Workspace statistics">
+            <div><span class="stat-number" id="stat-problems">—</span><span class="stat-label">Available problems</span></div>
+            <div><span class="stat-number" id="stat-attempts">—</span><span class="stat-label">Reasoning attempts</span></div>
+            <div><span class="stat-number" id="stat-assessments">—</span><span class="stat-label">Assessments</span></div>
+            <div><span class="stat-number" id="stat-drafts">—</span><span class="stat-label">Saved PPC drafts</span></div>
+          </div>
+
+          <div class="library-section-head">
+            <div class="filter-set">
+              <label class="select-wrap" aria-label="Filter difficulty"><svg class="icon"><use href="#i-filter"></use></svg><select id="filter-level"><option value="">All levels</option><option value="1">Level 1</option><option value="2">Level 2</option><option value="3">Level 3</option><option value="4">Level 4</option><option value="5">Level 5</option><option value="6">Level 6</option></select></label>
+              <label class="select-wrap" aria-label="Filter status"><select id="filter-status"><option value="">All statuses</option><option value="presented">Ready to solve</option><option value="evaluated">Evaluated</option><option value="attempted">Attempted</option></select></label>
+              <label class="select-wrap" aria-label="Filter topic"><select id="filter-topic"><option value="">All topics</option></select></label>
+              <label class="select-wrap" aria-label="Filter reasoning family"><select id="filter-family"><option value="">All families</option></select></label>
+              <label class="select-wrap" aria-label="Filter presentation"><select id="filter-presentation"><option value="">All formats</option><option value="story">Story</option><option value="direct">Direct</option></select></label>
+              <label class="select-wrap" aria-label="Filter progress"><select id="filter-progress"><option value="">All progress</option><option value="unattempted">Not attempted</option><option value="attempted">Attempted</option><option value="passed">Passed review</option><option value="eligible">Not revealed</option><option value="revealed">Reference revealed</option></select></label>
+              <div class="similar-picker" id="similar-picker">
+                <div class="select-wrap">
+                  <input id="filter-similar" type="hidden">
+                  <input id="similar-query" type="search" role="combobox" aria-label="Find similar problems by challenge name or RACG number" aria-autocomplete="list" aria-expanded="false" aria-controls="similar-options" placeholder="Similar to any problem…" autocomplete="off">
+                  <button id="similar-clear" type="button" aria-label="Clear similar problem" hidden>×</button>
+                </div>
+                <div id="similar-options" class="similar-options" role="listbox" aria-label="Matching challenges" hidden></div>
+              </div>
+              <label class="select-wrap" aria-label="Sort problems"><select id="filter-sort"><option value="newest">Newest</option><option value="oldest">Oldest</option><option value="difficulty_asc">Easy → hard</option><option value="difficulty_desc">Hard → easy</option><option value="topic">Topic order</option></select></label>
+              <button type="button" class="button button-outline library-refresh" id="refresh-library" title="Reload newly published RACG problems">Refresh</button>
+            </div>
+          </div>
+
+          <div class="problem-table">
+            <div class="table-header"><span>CHALLENGE</span><span>TOPIC</span><span>DIFFICULTY</span><span>PROGRESS</span><span></span><span aria-label="Actions"></span></div>
+            <div id="problem-list" class="problem-items" aria-live="polite"><div class="loading-state">Loading your archive…</div></div>
+          </div>
+          <nav id="problem-pagination" class="problem-pagination" aria-label="Problem pages">
+            <span id="pagination-summary" class="pagination-summary" aria-live="polite"></span>
+            <div class="pagination-controls">
+              <label class="pagination-size">Per page <select id="page-size"><option value="12" selected>12</option><option value="24">24</option><option value="48">48</option></select></label>
+              <button id="page-previous" type="button" class="pagination-arrow" aria-label="Previous page">‹</button>
+              <div id="page-numbers" class="pagination-numbers" aria-label="Choose page"></div>
+              <button id="page-next" type="button" class="pagination-arrow" aria-label="Next page">›</button>
+            </div>
+          </nav>
+
+          <div class="under-grid">
+            <section class="field-note">
+              <span class="small-kicker">PPC reference</span>
+              <h3>Reasoning begins before implementation.</h3>
+              <p>Specify the problem, propose a precise algorithm, then establish why it works. The PPC framework makes your thought process inspectable—not just your final answer.</p>
+              <button type="button" class="text-link" id="learn-ppc">Explore the PPC method <svg class="icon"><use href="#i-arrow"></use></svg></button>
+            </section>
+
+          </div>
+          <footer class="footer"><span>ARDS · Reasoning workspace</span><span>Stored locally</span></footer>
+        </div>
+      </main>
+
+      <main id="view-problem" class="page page-problem hidden">
+        <div class="problem-top">
+          <button type="button" id="go-back" class="back-link"><svg class="icon"><use href="#i-chevron"></use></svg> All problems</button>
+          <div class="problem-top-right"><span class="save-indicator" id="save-status">Not saved yet</span><button type="button" id="save-draft" class="button button-outline"><svg class="icon"><use href="#i-save"></use></svg> Save draft</button></div>
+        </div>
+        <div class="problem-workspace">
+          <section class="statement-panel" aria-label="Problem statement">
+            <div class="statement-meta"><span class="mono-meta" id="problem-id">RACG-0000</span><span class="tag-dot">·</span><span class="mono-meta" id="problem-level">LEVEL —</span><span class="tag-dot">·</span><span class="mono-meta" id="problem-topic">ALGORITHMS</span></div>
+            <h1 id="problem-title">Problem title</h1>
+            <div class="statement-toolbar"><span><svg class="icon"><use href="#i-book"></use></svg> Problem statement</span><span class="label-neutral" id="problem-progress">AVAILABLE</span></div>
+            <p id="problem-review-note" class="review-only-note hidden">This problem is an authored draft awaiting independent verification. You can preview it and save a private PPC draft, but formal assessment and reference reveal are unavailable until release.</p>
+            <article id="problem-statement" class="statement-content"></article>
+            <div class="statement-footnote"><svg class="icon"><use href="#i-info"></use></svg> Your work is private. Completing a PPC draft does not automatically certify its correctness.</div>
+          </section>
+
+          <section class="editor-panel" aria-label="PPC editor">
+            <div class="editor-heading">
+              <div><div class="editor-eyebrow">PPC editor</div><h2>Write your PPC</h2><p>A rigorous solution starts with a precise statement.</p></div>
+              <button id="reveal-reference" type="button" class="button button-outline hidden" title="Reveal the reference PPC">Reveal PPC</button>
+            </div>
+            <div class="editor-tabs" role="tablist" aria-label="PPC sections">
+              <button type="button" role="tab" id="tab-problem" data-section="problem" aria-selected="true" class="editor-tab active"><span>01</span> Problem</button>
+              <button type="button" role="tab" id="tab-procedure" data-section="procedure" aria-selected="false" class="editor-tab"><span>02</span> Procedure</button>
+              <button type="button" role="tab" id="tab-correctness" data-section="correctness" aria-selected="false" class="editor-tab"><span>03</span> Proof</button>
+              <button type="button" role="tab" id="tab-complexity" data-section="complexity" aria-selected="false" class="editor-tab"><span>04</span> Complexity</button>
+            </div>
+            <div class="writing-area">
+              <div class="writing-head"><div><span class="section-kicker" id="section-kicker">P1 · FORMALIZATION</span><h3 id="section-title">Problem specification</h3><p id="section-description">Define inputs, assumptions, and the exact output relation.</p></div><button id="editor-open-guide" type="button" class="editor-guide-link"><svg class="icon"><use href="#i-book"></use></svg> Explain this section <span aria-hidden="true">↗</span></button></div>
+              <label class="sr-only" for="ppc-input">Your reasoning for this PPC section</label>
+              <textarea id="ppc-input" spellcheck="true" placeholder="Begin by specifying the mathematical problem..." rows="17"></textarea>
+              <div class="editor-meter"><span id="character-count">0 characters</span><span>Markdown & mathematical notation supported as text</span></div>
+            </div>
+            <div class="editor-footer">
+              <div class="editor-tips"><svg class="icon"><use href="#i-info"></use></svg> Every section is preserved as you work.</div>
+              <div class="footer-actions"><label class="independent-attestation"><input id="independent-attest" type="checkbox"> Independent, without hints</label><button id="next-section" type="button" class="button button-outline">Next section <svg class="icon"><use href="#i-arrow"></use></svg></button><button id="submit-ppc" type="button" class="button button-primary">Submit PPC <svg class="icon"><use href="#i-arrow"></use></svg></button></div>
+            </div>
+          </section>
+        </div>
+      </main>
+
+      <main id="view-guide" class="page page-guide hidden">
+        <div class="manual-shell">
+          <div class="manual-hero">
+            <div class="eyebrow"><span class="eyebrow-line"></span> THE PPC FIELD MANUAL · VERSION 3</div>
+            <h1>PPC framework</h1>
+            <p class="lead">A working reference for constructing precise algorithms and defensible correctness arguments. Definitions, proof techniques, examples, and checks—all in one place.</p>
+            <div class="manual-hero-actions">
+              <button class="button button-primary" type="button" id="manual-start">Start the guided path <svg class="icon"><use href="#i-arrow"></use></svg></button>
+              <button class="button button-outline" type="button" id="manual-copy-template">Copy PPC skeleton <svg class="icon"><use href="#i-file"></use></svg></button>
+            </div>
+            
+          </div>
+          <div class="manual-layout">
+            <nav class="manual-toc" aria-label="PPC manual chapters">
+              <div class="manual-toc-title">THE REFERENCE</div>
+              <div id="manual-chapters" class="manual-chapters"></div>
+              <div class="manual-toc-helper">Use this reference alongside your PPC draft. Worked examples are independent of your active problem.</div>
+            </nav>
+            <section class="manual-reading" aria-live="polite">
+              <div id="manual-chapter-content"></div>
+              <div class="manual-pagination">
+                <button type="button" id="manual-prev" class="button button-outline">← Previous</button>
+                <span id="manual-progress">01 / 08</span>
+                <button type="button" id="manual-next" class="button button-primary">Next chapter →</button>
+              </div>
+            </section>
+          </div>
+        </div>
+      </main>
+
+      <main id="view-overview" class="page page-overview hidden">
+        <div class="guide-wrap"><button id="overview-back" type="button" class="back-link"><svg class="icon"><use href="#i-chevron"></use></svg> Problem library</button><div class="eyebrow"><span class="eyebrow-line"></span> THE SYSTEM</div><h1>Your progress</h1><p class="lead">The archive remembers what was attempted, without pretending that an unverified proof is correct.</p><div id="overview-details" class="overview-details"></div></div>
+      </main>
+    </div>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="workspace-dialog-overlay hidden" id="workspace-dialog-overlay" role="presentation">
+    <div class="workspace-dialog" role="dialog" aria-modal="true" aria-labelledby="workspace-dialog-title">
+      <header class="workspace-dialog-header"><div><h2 id="workspace-dialog-title">Preview</h2><p id="workspace-dialog-subtitle"></p></div><button type="button" id="workspace-dialog-close" class="icon-button" aria-label="Close dialog"><svg class="icon"><use href="#i-close"></use></svg></button></header>
+      <div id="workspace-dialog-content" class="workspace-dialog-content"></div>
+      <footer class="workspace-dialog-actions" id="workspace-dialog-actions"></footer>
+    </div>
+  </div>
+  <div id="search-overlay" class="command-overlay hidden" role="dialog" aria-modal="true" aria-label="Search ARDS problems">
+    <div class="command-modal"><label class="command-input-wrap"><svg class="icon"><use href="#i-search"></use></svg><input id="command-query" placeholder="Find a problem by name, topic, or ID..." autocomplete="off" aria-label="Search problems"></label><div id="command-results" class="command-results"></div><div class="command-foot"><span>Search your local problem archive</span><kbd>ESC</kbd> to close</div></div>
+  </div>
+</body>
+</html>

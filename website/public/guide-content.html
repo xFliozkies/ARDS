@@ -1,0 +1,148 @@
+<div id="manual-lessons">
+<section class="manual-lesson" data-id="start" data-label="Orientation" data-group="START HERE">
+  <div class="manual-reading-head"><span class="manual-overline">00 / FOUNDATIONS</span><h2>What does a complete PPC establish?</h2><p>A roadmap for arguing that an algorithm does what its specification requires.</p></div>
+  <div class="manual-body">
+  <div class="manual-definition"><span>THE CENTRAL CONTRACT</span><div class="manual-equation">∀x ∈ D : Terminates(A,x) ∧ Q(x,A(x))</div><p>For every valid input x, the algorithm A must terminate, and its output must satisfy the required relation Q. The specification defines Q; a proof establishes it.</p></div>
+  <h3>Four passes, each with a distinct job</h3>
+  <div class="manual-step-grid"><article><small>P1 · DEFINE</small><strong>Specification</strong><p>Which inputs are valid? What exact output relation defines correctness?</p></article>
+  <article><small>P2 · CONSTRUCT</small><strong>Algorithm</strong><p>Describe a precise sequence of state changes and termination.</p></article>
+  <article><small>C · JUSTIFY</small><strong>Proof</strong><p>Establish why the algorithm terminates and satisfies the output relation.</p></article>
+  <article><small>K · ACCOUNT</small><strong>Complexity</strong><p>Derive time and extra memory bounds under a stated cost model.</p></article></div>
+  <h3>How to use the field manual</h3><ol class="manual-ordered"><li>Read the statement and separate input assumptions from the target conclusion.</li><li>Write the mathematical specification before choosing an algorithm.</li><li>Design an unambiguous procedure and choose an appropriate proof technique.</li><li>Show correctness, termination, and any feasibility/optimality obligation.</li><li>Derive complexity and review edge cases before submission.</li></ol>
+  <div class="manual-notice"><strong>Evidence is not all the same</strong><p>The site stores your prose PPC; it does not automatically validate its mathematics. A structural check, bounded tests, human review, and a Lean-checked theorem offer different evidence, and the subject of each check must be identified.</p></div>
+  <button type="button" class="manual-internal-link" data-manual-go="spec">Start with P1: specifying the problem →</button>
+  </div>
+</section>
+
+<section class="manual-lesson" data-id="spec" data-label="P1 · Specification" data-group="THE CORE">
+  <div class="manual-reading-head"><span class="manual-overline">01 / PROBLEM SPECIFICATION</span><h2>Define exactly what must be true.</h2><p>A precise specification is an output contract, not a retelling of the story.</p></div>
+  <div class="manual-body">
+  <div class="manual-definition"><span>THE MATHEMATICAL MODEL</span><div class="manual-equation">P = (X, Y, D, Q, K)</div><p><strong>X:</strong> input type. <strong>Y:</strong> output type. <strong>D ⊆ X:</strong> admissible input domain. <strong>Q(x,y):</strong> required relation. <strong>K:</strong> computational cost model.</p></div>
+  <h3>Define each ingredient</h3><dl class="manual-dl">
+  <div><dt>Input domain D</dt><dd>Specify lengths, value ranges, indexing conventions, duplicates, graph properties, and any preconditions. Do not silently assume an array is sorted.</dd></div>
+  <div><dt>Output type Y</dt><dd>Integer, Boolean, permutation, set, path, sequence, or a sentinel for impossible inputs? Define its representation.</dd></div>
+  <div><dt>Required relation Q</dt><dd>State exactly when y is accepted as an answer for x. For optimization, require feasibility and a comparison against every feasible candidate.</dd></div>
+  <div><dt>Quantifiers</dt><dd><code>∀</code> means every; <code>∃</code> means at least one. Where existence is claimed, define the witness or explain why a witness must exist.</dd></div></dl>
+  <h3>From vague to mathematically precise</h3><div class="manual-comparison"><div><small>TOO VAGUE</small><p>“Find the missing number in the array.”</p></div><div><small>WELL-SPECIFIED</small><p>For an integer array A, output the unique m ≥ 1 such that m ∉ A and every integer k satisfying 1 ≤ k &lt; m belongs to A.</p></div></div>
+  <p>The second statement specifies the <em>smallest missing positive integer</em>, including when A contains negative values and duplicates.</p>
+  <h3>P1 checklist</h3><ul class="manual-check-list"><li>All input assumptions and constraints stated?</li><li>Output type and acceptable values specified?</li><li>Infeasible or empty instances addressed?</li><li>Optimality quantified if the problem asks for a minimum or maximum?</li></ul>
+  </div>
+</section>
+
+<section class="manual-lesson" data-id="algorithm" data-label="P2 · Procedure" data-group="THE CORE">
+  <div class="manual-reading-head"><span class="manual-overline">02 / PROPOSED ALGORITHM</span><h2>Make each step unambiguous.</h2><p>Another reader should be able to execute your procedure without guessing what you meant.</p></div>
+  <div class="manual-body">
+  <div class="manual-definition"><span>ABSTRACT ALGORITHM</span><div class="manual-equation">A = (Σ, Init, Step, Halt, Out)</div><p>Describe the state Σ, initialization, transitions, halt condition, and extracted output. Pseudocode is welcome but not required.</p></div>
+  <h3>Five questions your procedure must answer</h3><ol class="manual-ordered"><li><strong>Initialization:</strong> What variables and data structures exist initially?</li><li><strong>Transition:</strong> What is examined and updated on each step?</li><li><strong>Choice rule:</strong> How is one action selected if several are possible?</li><li><strong>Stopping condition:</strong> When, precisely, is processing finished?</li><li><strong>Output:</strong> What is returned for every type of valid instance?</li></ol>
+  <h3>Illustrative procedure — interval sums</h3>
+  <pre class="manual-code">Input: A[0..N−1], queries (l,r)
+pref[0] ← 0
+for i from 0 through N−1:
+    pref[i+1] ← pref[i] + A[i]
+for every valid query (l,r):
+    output pref[r+1] − pref[l]</pre>
+  <p>This is a complete procedure, but it still needs a proof of its prefix invariant and the subtraction identity.</p>
+  <div class="manual-notice"><strong>Implementation claims require extra care</strong><p>A proof over unbounded mathematical integers does not automatically verify Java <code>int</code>. Consider overflow, indexes, input parsing, memory limits, and the exact behavior of built-in operations.</p></div>
+  </div>
+</section>
+
+<section class="manual-lesson" data-id="proof" data-label="C · Correctness" data-group="THE CORE">
+  <div class="manual-reading-head"><span class="manual-overline">03 / CORRECTNESS PROOF</span><h2>A claim needs a chain of reasons.</h2><p>Show the postcondition holds for every valid input, not merely the cases that feel typical.</p></div>
+  <div class="manual-body">
+  <div class="manual-definition"><span>TOTAL CORRECTNESS</span><div class="manual-equation">Partial correctness + Termination = Total correctness</div><p>Partial correctness: if execution finishes, its result satisfies Q. Termination: every permitted execution finishes. Total correctness requires both.</p></div>
+  <h3>What you must prove</h3><div class="manual-obligation-list">
+  <div><span>01</span><strong>Well-definedness</strong><p>Operations are legal in all reachable states.</p></div>
+  <div><span>02</span><strong>Main lemma or invariant</strong><p>The relationship between your intermediate state and the specification.</p></div>
+  <div><span>03</span><strong>Termination</strong><p>A finite bound or strictly decreasing rank in a well-founded order.</p></div>
+  <div><span>04</span><strong>Postcondition</strong><p>At exit, the algorithm's result satisfies Q.</p></div>
+  <div><span>05</span><strong>Optimality where required</strong><p>The solution is feasible, and no feasible competitor is better.</p></div></div>
+  <h3>Loop invariant: four obligations</h3><div class="manual-math-stack">
+  <div><small>INITIALIZATION</small><code>I(s₀)</code></div>
+  <div><small>PRESERVATION</small><code>I(s) ∧ guard(s) ∧ Step(s,s′) ⇒ I(s′)</code></div>
+  <div><small>EXIT</small><code>I(s) ∧ ¬guard(s) ⇒ Q(input,Out(s))</code></div>
+  <div><small>TERMINATION</small><code>Variant(s) ∈ ℕ; decreases every continuing step</code></div></div>
+  <h3>A common logical gap</h3><div class="manual-comparison"><div><small>NOT SUFFICIENT</small><p>“I process all elements, so the answer is optimal.”</p></div><div><small>WHAT IS MISSING</small><p>The invariant and its proof, exit implication, termination, and an argument for optimality if optimization is claimed.</p></div></div>
+  </div>
+</section>
+
+<section class="manual-lesson" data-id="methods" data-label="Proof techniques" data-group="PROOF TOOLBOX">
+  <div class="manual-reading-head"><span class="manual-overline">04 / STRATEGY SELECTOR</span><h2>Pick a proof that fits the algorithm.</h2><p>Use the selector to see technique-specific obligations, common failure modes, and proof skeletons.</p></div>
+  <div class="manual-body">
+  <label class="manual-select-label" for="manual-technique">CHOOSE THE ALGORITHM STRUCTURE</label>
+  <select id="manual-technique" class="manual-select"><option value="invariant">Iterative → Loop invariant</option><option value="induction">Recursive → Induction</option><option value="greedy">Greedy optimization → Exchange</option><option value="graph">Graph traversal → Reachability</option><option value="binary">Binary search → Search invariant</option><option value="counting">Counting → Bijection / bounds</option></select>
+  <div id="manual-technique-detail" class="manual-technique-detail" aria-live="polite"></div>
+  <h3>Watch for these anti-patterns</h3><div class="manual-anti-patterns">
+  <div><strong>Testing as proof</strong><p>“All examples pass.” Finite examples are useful for detecting errors, but they cannot justify an unrestricted universal statement.</p></div>
+  <div><strong>Circular argument</strong><p>“Greedy is optimal because it always picks the best.” The conclusion is merely being repeated.</p></div>
+  <div><strong>Local-to-global leap</strong><p>“My choice is locally best, therefore the whole solution is best.” A separate exchange or structural theorem is needed.</p></div></div>
+  </div>
+</section>
+
+<section class="manual-lesson" data-id="complexity" data-label="Complexity" data-group="THE CORE">
+  <div class="manual-reading-head"><span class="manual-overline">05 / RESOURCE ACCOUNTING</span><h2>Account for every operation.</h2><p>An asymptotic bound should follow from the procedure and an explicit computational cost model.</p></div>
+  <div class="manual-body">
+  <div class="manual-definition"><span>ASYMPTOTIC UPPER BOUND</span><div class="manual-equation">T(N) ∈ O(f(N)) ⇔ ∃c &gt; 0, N₀ : ∀N ≥ N₀, T(N) ≤ c · f(N)</div><p><strong>O</strong> is an upper bound; <strong>Θ</strong> is a tight asymptotic bound. State what N measures and which operations count as constant-cost.</p></div>
+  <h3>Common bounds and their justification</h3><table class="manual-table"><thead><tr><th>Pattern</th><th>Time</th><th>Reason</th></tr></thead><tbody>
+  <tr><td>One full scan</td><td><code>O(N)</code></td><td>Each value inspected a bounded number of times.</td></tr>
+  <tr><td>Sort + scan</td><td><code>O(N log N)</code></td><td>Sorting dominates one linear pass.</td></tr>
+  <tr><td>Two full nested loops</td><td><code>O(N²)</code></td><td>Up to N inner steps per N outer steps.</td></tr>
+  <tr><td>Binary search</td><td><code>O(log N)</code></td><td>Remaining interval shrinks geometrically.</td></tr>
+  <tr><td>Prefix + Q queries</td><td><code>O(N+Q)</code></td><td>Preprocess once, answer each query in constant time.</td></tr>
+  <tr><td>BFS adjacency list</td><td><code>O(V+E)</code></td><td>Vertices and edges considered bounded times.</td></tr></tbody></table>
+  <h3>Auxiliary space</h3><p>Explicitly state whether your bound includes the input. A prefix array costs <code>O(N)</code> extra space; a fixed number of counters costs <code>O(1)</code>. Include recursion stacks and data structure overhead when relevant.</p>
+  <div class="manual-notice"><strong>Implementation-specific costs matter</strong><p>In Java, <code>Arrays.sort</code>, <code>HashMap</code>, copying arrays, and concatenating immutable strings can dominate the complexity. Distinguish average/expected costs from guaranteed worst cases.</p></div>
+  </div>
+</section>
+
+<section class="manual-lesson" data-id="notation" data-label="Notation dictionary" data-group="REFERENCE">
+  <div class="manual-reading-head"><span class="manual-overline">06 / SYMBOLS & LANGUAGE</span><h2>Read the symbols, not just the words.</h2><p>A searchable dictionary of notation commonly used in algorithm specifications and proofs.</p></div>
+  <div class="manual-body">
+  <div class="manual-notation-search"><label for="manual-notation-query">Search for a symbol or meaning</label><input id="manual-notation-query" data-testid="manual-notation-search" type="search" placeholder="e.g., forall, ∃, such that, summation…"></div>
+  <div class="manual-symbol-table" id="manual-symbol-rows">
+    <div data-search="forall ∀ for every universal"><b>∀</b><span><strong>For every</strong><small>∀ i ∈ [1,N], P(i): P holds for each i in the interval.</small></span></div>
+    <div data-search="exists ∃ there exists existential witness"><b>∃</b><span><strong>There exists</strong><small>∃ j ∈ D : Q(j) means at least one j in D satisfies Q.</small></span></div>
+    <div data-search="belongs element of member ∈"><b>∈</b><span><strong>Is an element of</strong><small>x ∈ S says that x belongs to S.</small></span></div>
+    <div data-search="not in ∉ absent"><b>∉</b><span><strong>Is not in</strong><small>m ∉ A: m is absent from the array values.</small></span></div>
+    <div data-search="such that | vertical bar set builder colon :"><b>|</b><span><strong>Such that (in set-builder notation)</strong><small>{x ∈ D | P(x)} includes values satisfying P. A colon can mean the same here.</small></span></div>
+    <div data-search="implies implication ⇒"><b>⇒</b><span><strong>Implies</strong><small>P ⇒ Q: if P holds, then Q must hold.</small></span></div>
+    <div data-search="iff equivalent ⇔"><b>⇔</b><span><strong>If and only if</strong><small>Both P ⇒ Q and Q ⇒ P are required.</small></span></div>
+    <div data-search="and conjunction ∧"><b>∧</b><span><strong>Logical AND</strong><small>P ∧ Q requires both P and Q.</small></span></div>
+    <div data-search="or disjunction ∨"><b>∨</b><span><strong>Logical OR</strong><small>P ∨ Q holds if at least one is true.</small></span></div>
+    <div data-search="negation not ¬"><b>¬</b><span><strong>Logical NOT</strong><small>¬P means P is false.</small></span></div>
+    <div data-search="sum sigma summation ∑"><b>∑</b><span><strong>Summation</strong><small>∑ᵢ₌₁ᴺ Aᵢ sums entries A₁ through Aₙ.</small></span></div>
+    <div data-search="therefore ∴"><b>∴</b><span><strong>Therefore</strong><small>Marks a claimed conclusion; it is not a proof step by itself.</small></span></div>
+    <div data-search="ceiling ceil ⌈ ⌉"><b>⌈x⌉</b><span><strong>Ceiling</strong><small>The smallest integer greater than or equal to x.</small></span></div>
+    <div data-search="floor ⌊ ⌋"><b>⌊x⌋</b><span><strong>Floor</strong><small>The largest integer less than or equal to x.</small></span></div>
+    <div data-search="subset ⊆"><b>⊆</b><span><strong>Subset or equal</strong><small>A ⊆ B means every member of A also belongs to B.</small></span></div>
+    <div data-search="big o theta Θ complexity"><b>O, Θ</b><span><strong>Asymptotic notation</strong><small>O bounds growth above; Θ gives a matching upper and lower growth bound.</small></span></div>
+  </div><p class="manual-note">The vertical bar changes meaning by context: “such that” in set construction, absolute value in |x|, and divisibility in a | b.</p>
+  </div>
+</section>
+
+<section class="manual-lesson" data-id="example" data-label="Worked PPC & checklist" data-group="PRACTICE">
+  <div class="manual-reading-head"><span class="manual-overline">07 / COMPLETE WALKTHROUGH</span><h2>A full PPC, from start to finish.</h2><p>A worked prefix-sum example unrelated to your unresolved ARDS challenges.</p></div>
+  <div class="manual-body">
+  <div class="manual-example-head"><span>WORKED CASE · INTERVAL SUM</span><strong>Sum a contiguous range.</strong><p>Given an integer array A with N ≥ 1 and valid inclusive indices 0 ≤ l ≤ r &lt; N, compute the sum from A[l] through A[r].</p></div>
+  <div class="manual-example-part"><small>P1 / SPECIFICATION</small><h3>Define the target relation</h3><div class="manual-equation">Q(A,l,r,y) ⇔ y = ∑ᵢ₌ₗʳ A[i]</div><p>The domain requires A to have N integers and valid indices. The output is exactly the specified mathematical sum.</p></div>
+  <div class="manual-example-part"><small>P2 / PROCEDURE</small><h3>Build a prefix accumulator</h3><pre class="manual-code">pref[0] = 0
+for i = 0, …, N−1:
+    pref[i+1] = pref[i] + A[i]
+return pref[r+1] − pref[l]</pre></div>
+  <div class="manual-example-part"><small>C / CORRECTNESS</small><h3>Establish invariant, termination, and postcondition</h3><p><strong>Invariant:</strong> after processing k elements, pref[k] equals their sum.</p><p><strong>Initialization:</strong> pref[0] = 0 equals the empty sum.</p><p><strong>Preservation:</strong> adding A[k] to a correct pref[k] produces the sum of the first k+1 elements.</p><p><strong>Termination:</strong> the loop has exactly N iterations and N is finite.</p><p><strong>Exit:</strong> pref[r+1] contains all terms through r; pref[l] contains the terms before l. Subtraction yields precisely Q.</p></div>
+  <div class="manual-example-part"><small>K / COMPLEXITY</small><h3>Quantify resources</h3><p>Prefix construction: <strong>O(N)</strong> time and <strong>O(N)</strong> extra space. Each query: <strong>O(1)</strong> time and no additional asymptotic storage. For M queries: <strong>O(N+M)</strong> total time on a unit-cost RAM model. Choose a sufficiently wide numeric type for implementation.</p></div>
+  <h3>Proof clinic: identify the missing reasoning</h3>
+  <div class="manual-clinic"><div><small>CLAIM A</small><p>“Greedy is globally optimal because I pick the locally best choice.”</p><button type="button" class="manual-reveal" data-reveal="manual-answer-a" aria-expanded="false">Reveal the flaw ↓</button><p class="manual-answer" id="manual-answer-a" hidden>Local optimality does not imply global optimality without a separate proof. Establish a valid exchange step or another structural argument.</p></div>
+  <div><small>CLAIM B</small><p>“The invariant is preserved, so total correctness follows.”</p><button type="button" class="manual-reveal" data-reveal="manual-answer-b" aria-expanded="false">Reveal the missing obligations ↓</button><p class="manual-answer" id="manual-answer-b" hidden>Also prove initialization, that invariant plus exit yields the postcondition, and termination. Preservation alone is insufficient.</p></div></div>
+  <h3>Self-review before submitting</h3><p>Check these yourself; they are not automatic proof certification.</p>
+  <div class="manual-self-check" id="manual-self-check">
+    <label><input type="checkbox"> I defined legal inputs, outputs and the required relation.</label>
+    <label><input type="checkbox"> My procedure is precise enough to execute.</label>
+    <label><input type="checkbox"> I justified correctness without circular assumptions.</label>
+    <label><input type="checkbox"> I established termination.</label>
+    <label><input type="checkbox"> I proved feasibility/optimality if necessary.</label>
+    <label><input type="checkbox"> I derived time and space costs.</label>
+  </div><div class="manual-check-progress" id="manual-check-progress">0 of 6 items reviewed</div>
+  <button type="button" class="button button-primary manual-open-editor" id="manual-open-editor">Back to my PPC workspace →</button>
+  </div>
+</section>
+</div>

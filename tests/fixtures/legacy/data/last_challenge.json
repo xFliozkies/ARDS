@@ -1,0 +1,27 @@
+{
+  "date": "2020-01-01",
+  "challenge_number": 2,
+  "session_type": "RACG",
+  "status": "presented_awaiting_independent_attempt",
+  "title": "Synthetic Missing Positive Fixture",
+  "topic_id": 86,
+  "topic_label": "Missing Elements",
+  "canonical_catalog_label_at_id": "Convex hulls",
+  "historical_catalog_mismatch": true,
+  "difficulty": 1,
+  "continuation": false,
+  "story": false,
+  "presentation": "direct",
+  "rolls": {
+    "O": 91,
+    "X": 757785,
+    "Y": 75816,
+    "P": 91
+  },
+  "notes": "Entirely synthetic import-regression fixture, not a learner record.",
+  "statement_file": "data/synthetic_missing_id.md",
+  "constraints": {
+    "N_min": 1,
+    "N_max": 8
+  }
+}

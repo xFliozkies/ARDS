@@ -1,0 +1,11 @@
+{
+  "schema": "ppc3-approved-lean-v1",
+  "lean_version": "4.35.0",
+  "lake_version": "5.0.0",
+  "sources": {
+    "PPC3Examples.lean": "095884a804659516ac26b30c8ea2abab35d96ad90df92d813e57964243cc3fd1",
+    "PPC3Expected.lean": "36d70bf9af929834f8ffe3d8905318d226fd0f3f27ab6c35b22f048948276586",
+    "PPC3RuleSoundness.lean": "87aeb4e7c8eebc251962080f4ca1650c4acaf7b1726c12767cd8c5e89dc9827a"
+  },
+  "policy": "These are reviewed input pins, not signatures. Changing them requires inspecting definitions, statements and axiom dependencies."
+}

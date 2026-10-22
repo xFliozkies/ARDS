@@ -1,0 +1,347 @@
+{
+  "version": 1,
+  "patterns": [
+    {
+      "id": "F01",
+      "name": "direct_calculation",
+      "layer": "foundational",
+      "tags": [
+        "math",
+        "general"
+      ],
+      "description": "Compute a quantity directly from a defined formula."
+    },
+    {
+      "id": "F02",
+      "name": "conditional_evaluation",
+      "layer": "foundational",
+      "tags": [
+        "math",
+        "general"
+      ],
+      "description": "Select a rule using an explicit condition or threshold."
+    },
+    {
+      "id": "F03",
+      "name": "piecewise_functions",
+      "layer": "foundational",
+      "tags": [
+        "math",
+        "general"
+      ],
+      "description": "Represent different regimes with different mathematical expressions."
+    },
+    {
+      "id": "F04",
+      "name": "direct_counting",
+      "layer": "foundational",
+      "tags": [
+        "arrays",
+        "strings",
+        "general"
+      ],
+      "description": "Count items that satisfy an explicit predicate."
+    },
+    {
+      "id": "F05",
+      "name": "equality_and_comparison",
+      "layer": "foundational",
+      "tags": [
+        "arrays",
+        "strings",
+        "general"
+      ],
+      "description": "Use order, equality or inequalities to decide a result."
+    },
+    {
+      "id": "F06",
+      "name": "simple_iteration",
+      "layer": "foundational",
+      "tags": [
+        "arrays",
+        "strings",
+        "general"
+      ],
+      "description": "Apply a fixed operation across a finite sequence."
+    },
+    {
+      "id": "S01",
+      "name": "inverse_transformation",
+      "layer": "structural",
+      "tags": [
+        "strings",
+        "arrays",
+        "math",
+        "general"
+      ],
+      "description": "Infer feasible originals from a given transformation."
+    },
+    {
+      "id": "S02",
+      "name": "information_loss",
+      "layer": "structural",
+      "tags": [
+        "strings",
+        "arrays",
+        "general"
+      ],
+      "description": "Analyze what is recoverable from partial observations."
+    },
+    {
+      "id": "S03",
+      "name": "cyclic_periodicity",
+      "layer": "structural",
+      "tags": [
+        "strings",
+        "arrays"
+      ],
+      "description": "Use invariance under cyclic shifts."
+    },
+    {
+      "id": "S04",
+      "name": "invariant_reasoning",
+      "layer": "structural",
+      "tags": [
+        "arrays",
+        "strings",
+        "graphs",
+        "math",
+        "general"
+      ],
+      "description": "Identify and preserve properties under operations."
+    },
+    {
+      "id": "S05",
+      "name": "local_to_global",
+      "layer": "structural",
+      "tags": [
+        "arrays",
+        "strings",
+        "graphs",
+        "general"
+      ],
+      "description": "Infer global constraints from neighboring relations."
+    },
+    {
+      "id": "S06",
+      "name": "prefix_aggregation",
+      "layer": "structural",
+      "tags": [
+        "arrays",
+        "strings"
+      ],
+      "description": "Aggregate intervals using prefixes."
+    },
+    {
+      "id": "S07",
+      "name": "monotonicity",
+      "layer": "structural",
+      "tags": [
+        "arrays",
+        "math",
+        "general"
+      ],
+      "description": "Exploit monotone feasibility or order."
+    },
+    {
+      "id": "S08",
+      "name": "boundary_transitions",
+      "layer": "structural",
+      "tags": [
+        "arrays",
+        "strings",
+        "general"
+      ],
+      "description": "Reason about points where a condition changes."
+    },
+    {
+      "id": "S09",
+      "name": "state_transitions",
+      "layer": "structural",
+      "tags": [
+        "strings",
+        "graphs",
+        "general"
+      ],
+      "description": "Model operations as transitions between states."
+    },
+    {
+      "id": "S10",
+      "name": "extremal_candidates",
+      "layer": "structural",
+      "tags": [
+        "arrays",
+        "graphs",
+        "math",
+        "general"
+      ],
+      "description": "Characterize feasible maximum or minimum candidates."
+    },
+    {
+      "id": "C01",
+      "name": "existential_feasibility",
+      "layer": "compositional",
+      "tags": [
+        "arrays",
+        "strings",
+        "graphs",
+        "math",
+        "general"
+      ],
+      "description": "Decide whether at least one valid witness exists."
+    },
+    {
+      "id": "C02",
+      "name": "universal_necessity",
+      "layer": "compositional",
+      "tags": [
+        "arrays",
+        "strings",
+        "graphs",
+        "math",
+        "general"
+      ],
+      "description": "Decide whether every valid witness has a property."
+    },
+    {
+      "id": "C03",
+      "name": "constructive_witnesses",
+      "layer": "compositional",
+      "tags": [
+        "arrays",
+        "strings",
+        "graphs",
+        "math",
+        "general"
+      ],
+      "description": "Construct an object meeting the constraints."
+    },
+    {
+      "id": "C04",
+      "name": "constraint_propagation",
+      "layer": "compositional",
+      "tags": [
+        "arrays",
+        "strings",
+        "graphs",
+        "general"
+      ],
+      "description": "Derive implied constraints from known ones."
+    },
+    {
+      "id": "C05",
+      "name": "impossibility_certificates",
+      "layer": "compositional",
+      "tags": [
+        "arrays",
+        "strings",
+        "graphs",
+        "math",
+        "general"
+      ],
+      "description": "Find an obstruction proving no solution exists."
+    },
+    {
+      "id": "C06",
+      "name": "complement_counting",
+      "layer": "compositional",
+      "tags": [
+        "arrays",
+        "strings",
+        "math",
+        "general"
+      ],
+      "description": "Count indirectly using the complement."
+    },
+    {
+      "id": "C07",
+      "name": "contribution_counting",
+      "layer": "compositional",
+      "tags": [
+        "arrays",
+        "strings",
+        "math"
+      ],
+      "description": "Sum independent contributions from objects."
+    },
+    {
+      "id": "C08",
+      "name": "greedy_exchange",
+      "layer": "compositional",
+      "tags": [
+        "arrays",
+        "graphs",
+        "math",
+        "general"
+      ],
+      "description": "Prove local choices by exchanging an alternative."
+    },
+    {
+      "id": "C09",
+      "name": "dominance_pruning",
+      "layer": "compositional",
+      "tags": [
+        "arrays",
+        "graphs",
+        "general"
+      ],
+      "description": "Eliminate states that cannot improve an answer."
+    },
+    {
+      "id": "C10",
+      "name": "resource_conservation",
+      "layer": "compositional",
+      "tags": [
+        "arrays",
+        "math",
+        "general"
+      ],
+      "description": "Track a conserved or bounded resource."
+    },
+    {
+      "id": "C11",
+      "name": "offline_reordering",
+      "layer": "compositional",
+      "tags": [
+        "arrays",
+        "graphs",
+        "general"
+      ],
+      "description": "Change processing order to answer queries."
+    },
+    {
+      "id": "C12",
+      "name": "reachability",
+      "layer": "compositional",
+      "tags": [
+        "graphs",
+        "general"
+      ],
+      "description": "Determine accessible states under transitions."
+    },
+    {
+      "id": "C13",
+      "name": "case_partitioning",
+      "layer": "compositional",
+      "tags": [
+        "arrays",
+        "strings",
+        "math",
+        "general"
+      ],
+      "description": "Prove coverage of mutually exclusive cases."
+    },
+    {
+      "id": "C14",
+      "name": "feasibility_to_optimization",
+      "layer": "compositional",
+      "tags": [
+        "arrays",
+        "graphs",
+        "math",
+        "general"
+      ],
+      "description": "Reduce optimizing an objective to feasibility decisions."
+    }
+  ]
+}

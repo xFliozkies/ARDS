@@ -1,0 +1,41 @@
+{
+  "title": "Two Directions on a Letter Ring",
+  "statement": "# Two Directions on a Letter Ring\n\nGiven a nonempty string S, determine whether there exists a string V such that rotating V left once produces S and rotating V right once also produces S.\n\nInput: a single nonempty string S using letters a, b, c (length up to 100000).\n\nOutput YES or NO.\n\nExample: input `abab`, output `YES`.",
+  "difficulty_estimate": 2,
+  "patterns": [
+    "S01",
+    "S03",
+    "C01"
+  ],
+  "provenance": "original ARDS 2.0 illustrative fixture",
+  "model": {
+    "inputs": {
+      "S": "nonempty string over abc"
+    },
+    "hidden_variables": [
+      "V:string of same length"
+    ],
+    "constraints": [
+      "L(V)=S",
+      "R(V)=S"
+    ],
+    "objective": "Determine whether a valid V exists",
+    "family": "opposite_rotations",
+    "parameters": {
+      "alphabet": "abc",
+      "exhaustive_max_n": 7
+    }
+  },
+  "reference_solution": "Check S[i] == S[(i+2)%N] for each i; output YES iff all pass. Time O(N), extra space O(1).",
+  "proof": "L(V)=S determines V uniquely as R(S). Substituting this into R(V)=S gives R(R(S))=S, equivalent to every cyclic position matching the one two positions ahead. The condition is therefore necessary and sufficient.",
+  "samples": [
+    {
+      "input": "abab\n",
+      "output": "YES\n"
+    },
+    {
+      "input": "abc\n",
+      "output": "NO\n"
+    }
+  ]
+}

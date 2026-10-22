@@ -1,0 +1,1 @@
+date,learner_id,session_type,problem_id,topic_id,difficulty,continuation,story,independent_correct,assisted_correct,minutes_to_first_solution,time_source,hint_level,optimality_verified,confidence_percent,modeling_0_4,discovery_0_4,correctness_0_4,edge_cases_0_4,complexity_0_4,optimization_0_4,transfer_0_4,calibration_0_4,notes

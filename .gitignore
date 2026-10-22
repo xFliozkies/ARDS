@@ -1,0 +1,27 @@
+# Python runtime and test caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+
+# Private local learner state, authoring packages, and verification evidence
+/data/*
+!/data/README.md
+/reviewers/
+/exports/
+
+# Generated previews and Lean build products
+/.scoped-artifacts/
+/references/.lake/
+
+# Local credentials and editor/OS files
+.env
+.env.*
+!.env.example
+.vscode/
+.idea/
+.DS_Store
+*~
