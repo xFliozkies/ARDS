@@ -403,7 +403,10 @@ function closeSymbols(){
 function toggleSymbols(){
   const open=$('symbol-palette').classList.toggle('hidden')===false;
   $('toggle-symbols').setAttribute('aria-expanded',String(open));
-  if(open&&!$('symbol-palette').childElementCount)window.ARDSEditor.buildPalette($('symbol-palette'),$('ppc-input'));
+  if(open&&!$('symbol-palette').childElementCount){
+    if(!window.ARDSEditor){notify('Editor helpers did not load. Hard-refresh the page (Ctrl+Shift+R) or restart the local server.',true);$('symbol-palette').classList.add('hidden');$('toggle-symbols').setAttribute('aria-expanded','false');return;}
+    window.ARDSEditor.buildPalette($('symbol-palette'),$('ppc-input'));
+  }
 }
 function onPaletteKeydown(e){
   if(e.key==='Escape'){e.preventDefault();e.stopPropagation();closeSymbols();$('toggle-symbols').focus();return;}
@@ -416,7 +419,7 @@ function onPaletteKeydown(e){
 }
 function insertOutline(){
   const ta=$('ppc-input');
-  const text=window.ARDSEditor.SKELETONS[state.section];
+  const text=window.ARDSEditor?.SKELETONS[state.section];
   if(!text)return;
   const insert=()=>{
     ta.focus();
@@ -688,7 +691,10 @@ function bind(){
   });
   document.querySelectorAll('.editor-tab').forEach(btn=>btn.addEventListener('click',()=>showSection(btn.dataset.section)));
   $('ppc-input').addEventListener('input',scheduleSave);
-  window.ARDSEditor.bindTextarea($('ppc-input'));
+  // editor.js is an enhancement (Tab, list continuation, symbols). If it failed
+  // to load, the textarea still works; do not take the whole app down.
+  if(window.ARDSEditor)window.ARDSEditor.bindTextarea($('ppc-input'));
+  else console.warn('ARDS editor helpers (editor.js) did not load; using a plain textarea.');
   $('mode-write').addEventListener('click',()=>{setMode('write');$('ppc-input').focus();});
   $('mode-preview').addEventListener('click',()=>setMode('preview'));
   $('toggle-symbols').addEventListener('click',toggleSymbols);
@@ -746,6 +752,10 @@ async function init(){
     if(hash.startsWith('#/problem/')){await openProblem(hash.slice(10));}
     else if(hash.startsWith('#/method')){$('nav-method').click();if(window.PPCGuide){const chapter=hash.slice('#/method/'.length);if(chapter&&chapter!==hash)window.PPCGuide.select(chapter);}}
     else if(hash==='#/overview'){$('nav-overview').click();}
-  }catch(err){$('problem-list').innerHTML='<div class="empty-state">Could not connect to ARDS: '+esc(err.message)+'.<br>Check that the local server is running.</div>';}
+  }catch(err){
+    const network=err instanceof TypeError&&/fetch|network|load failed/i.test(err.message);
+    $('problem-list').innerHTML='<div class="empty-state">'+(network
+      ?'Could not connect to ARDS: '+esc(err.message)+'.<br>Check that the local server is running.'
+      :'ARDS could not start: '+esc(err.message)+'.<br>If you just updated the files, restart the local server and hard-refresh (Ctrl+Shift+R).')+'</div>';}
 }
 init();
