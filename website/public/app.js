@@ -634,13 +634,20 @@ function goLibrary(){
   switchView('library');history.replaceState(null,'','#/');
   loadProblems().catch(err=>notify(err.message,true));
 }
+let commandOpener=null;
 async function showCommand(){
+  if($('search-overlay').classList.contains('hidden'))commandOpener=document.activeElement;
   $('search-overlay').classList.remove('hidden');
   $('command-query').value='';
   $('command-query').focus();
   await renderCommandResults('');
 }
-function hideCommand(){$('search-overlay').classList.add('hidden');}
+function hideCommand(){
+  if($('search-overlay').classList.contains('hidden'))return;
+  $('search-overlay').classList.add('hidden');
+  const target=commandOpener;commandOpener=null;
+  if(target&&document.contains(target)&&typeof target.focus==='function')target.focus();
+}
 async function renderCommandResults(query){
   try{
     const data=await api('/api/problems?'+new URLSearchParams({q:query}));
@@ -728,6 +735,7 @@ function bind(){
     if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'||(e.key==='/'&&!['INPUT','TEXTAREA'].includes(document.activeElement.tagName))){
       e.preventDefault();showCommand();}
     if(e.key==='Escape')hideCommand();
+    if(e.key==='Tab'&&!$('search-overlay').classList.contains('hidden'))window.ARDSUI?.trapTab(e,$('search-overlay'));
   });
 }
 async function init(){

@@ -115,7 +115,7 @@
       button.type='button';
       button.addEventListener('click',()=>{
         const target=content.querySelector('[data-ppc-section="'+key+'"]');
-        target?.scrollIntoView({behavior:'smooth',block:'start'});
+        target?.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
       });
       navigation.append(button);
     }
@@ -148,10 +148,23 @@
       if(e.target===$('workspace-dialog-overlay'))closeModal();
     });
     document.addEventListener('keydown',e=>{
-      if(e.key==='Escape'&&!$('workspace-dialog-overlay').classList.contains('hidden'))closeModal();
+      const overlay=$('workspace-dialog-overlay');
+      if(overlay.classList.contains('hidden'))return;
+      if(e.key==='Escape')closeModal();
+      else if(e.key==='Tab')trapTab(e,overlay);
     });
   }
-  window.ARDSUI={init,renderStatement,preview,explain,confirmReveal,showReference,closeModal,openModal};
+  // Keep Tab / Shift+Tab inside a modal container (WP2: dialogs trap focus).
+  function trapTab(e,container){
+    const items=[...container.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]):not([type="hidden"]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')]
+      .filter(el=>el.offsetParent!==null||el===document.activeElement);
+    if(!items.length){e.preventDefault();return;}
+    const first=items[0],last=items[items.length-1];
+    if(!container.contains(document.activeElement)){e.preventDefault();first.focus();}
+    else if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}
+    else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
+  }
+  window.ARDSUI={init,renderStatement,preview,explain,confirmReveal,showReference,closeModal,openModal,trapTab};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);
   else init();
 })();
