@@ -18,6 +18,8 @@
   <script src="/editor.js" defer></script>
   <script src="/studio-logic.js" defer></script>
   <script src="/app.js" defer></script>
+  <script src="/java-editor.js" defer></script>
+  <link rel="stylesheet" href="/java-editor.css">
   <script src="/guide.js" defer></script>
 </head>
 <body>
@@ -151,7 +153,7 @@
       <main id="view-problem" class="page page-problem hidden">
         <div class="problem-top">
           <button type="button" id="go-back" class="back-link"><svg class="icon"><use href="#i-chevron"></use></svg> Back</button>
-          <div class="problem-top-right"><span class="save-indicator" id="save-status">Not saved yet</span><span class="sr-only" id="save-announce" role="status" aria-live="polite"></span><button type="button" id="toggle-focus" class="button button-outline" aria-pressed="false" title="Hide the statement and write at full width">Focus</button><button type="button" id="export-draft" class="button button-outline" title="Download this draft as Markdown">Download</button><button type="button" id="save-draft" class="button button-outline"><svg class="icon"><use href="#i-save"></use></svg> Save draft</button></div><button type="button" id="next-problem" class="button button-outline">Next <svg class="icon"><use href="#i-arrow"></use></svg></button>
+          <div class="problem-top-right"><span class="save-indicator" id="save-status">Not saved yet</span><span class="sr-only" id="save-announce" role="status" aria-live="polite"></span><button type="button" id="toggle-focus" class="button button-outline" aria-pressed="false" title="Hide the statement and write at full width">Focus</button><button type="button" id="java-timed" class="button button-outline">Start time</button><button type="button" id="java-stop" class="button button-outline" hidden>Stop</button><button type="button" id="export-draft" class="button button-outline" title="Download this draft as Markdown">Download</button><button type="button" id="save-draft" class="button button-outline"><svg class="icon"><use href="#i-save"></use></svg> Save draft</button></div><button type="button" id="next-problem" class="button button-outline">Next <svg class="icon"><use href="#i-arrow"></use></svg></button>
         </div>
         <div class="workspace-panel-switch" role="group" aria-label="Workspace panel"><button type="button" id="panel-problem" aria-pressed="true">Problem</button><button type="button" id="panel-write" aria-pressed="false">Write</button></div>
         <div class="problem-workspace">
@@ -169,8 +171,26 @@
           </section>
 
           <div id="workspace-divider" class="workspace-divider" role="separator" tabindex="0" aria-label="Statement width" aria-orientation="vertical" aria-valuemin="30" aria-valuemax="65" aria-valuenow="50"></div>
-          <section class="editor-panel" aria-label="PPC editor">
-            <div class="editor-eyebrow">PPC editor</div>
+          <section class="editor-panel" aria-label="Solution workspace">
+            <div class="editor-picker">
+              <div class="editor-picker-label"><span>Workspace</span></div>
+              <div class="editor-picker-tabs" role="tablist" aria-label="Choose your editor">
+                <button type="button" id="choose-ppc" role="tab" aria-selected="true" aria-controls="ppc-workspace" tabindex="0">PPC editor</button>
+                <button type="button" id="choose-java" role="tab" aria-selected="false" aria-controls="java-workspace" tabindex="-1">Code editor <span>Java</span></button>
+              </div>
+              <p id="editor-choice-help">Develop your specification, algorithm, proof, and complexity.</p>
+            </div>
+            <div class="java-workspace" id="java-workspace" role="tabpanel" aria-labelledby="choose-java" tabindex="0" hidden>
+              <div class="java-actions"><span id="java-save" role="status"></span></div>
+              <label for="java-source">Main.java · Java only</label>
+              <div class="java-code"><pre id="java-lines" aria-hidden="true">1</pre><div class="java-code-body"><pre id="java-highlight" aria-hidden="true"></pre><textarea id="java-source" spellcheck="false" autocapitalize="off" autocomplete="off" aria-describedby="java-key-help"></textarea></div></div>
+              <small id="java-key-help">Tab indents; Shift+Tab unindents. Escape then Tab moves focus. Ctrl+S saves Java while this editor has focus.</small>
+              <label for="java-input-mode">Run with <select id="java-input-mode"><option value="samples">Official samples</option><option value="custom">Custom input</option></select></label>
+              <label for="java-stdin" id="java-stdin-label" class="hidden">Custom stdin<textarea id="java-stdin" rows="4" spellcheck="false"></textarea></label>
+              <div class="java-actions"><button type="button" class="button button-outline" id="java-run">Run tests</button><button type="button" class="button button-primary" id="java-submit">Submit Java</button><button type="button" class="button button-outline" id="java-download">Download .java</button></div>
+              <pre id="java-result" tabindex="0" role="status" aria-live="polite">Run tests checks samples or custom input. Submit checks the full available sample, edge and generated suite. Code verdicts do not grade your PPC proof.</pre>
+            </div>
+            <div id="ppc-workspace" role="tabpanel" aria-labelledby="choose-ppc" tabindex="0">
             <div class="editor-tabs" role="tablist" aria-label="PPC sections">
               <button type="button" role="tab" id="tab-problem" data-section="problem" aria-selected="true" aria-controls="ppc-panel" tabindex="0" class="editor-tab active"><span>01</span> Problem<i class="tab-state" aria-hidden="true"></i></button>
               <button type="button" role="tab" id="tab-procedure" data-section="procedure" aria-selected="false" aria-controls="ppc-panel" tabindex="-1" class="editor-tab"><span>02</span> Procedure<i class="tab-state" aria-hidden="true"></i></button>
@@ -193,6 +213,7 @@
             <div class="editor-footer">
               <div class="editor-tips"><svg class="icon"><use href="#i-info"></use></svg> Every section is preserved as you work.</div>
               <div class="footer-actions"><label class="independent-attestation"><input id="independent-attest" type="checkbox"> Independent, without hints</label></div>
+            </div>
             </div>
           </section>
         </div>

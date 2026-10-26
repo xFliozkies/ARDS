@@ -489,7 +489,7 @@ async function openProblem(id,{fromRoute=false}={}){
   try{
     const [problem,draft]=await Promise.all([api('/api/problems/'+encodeURIComponent(id)),api('/api/drafts/'+encodeURIComponent(id))]);
     if(request!==problemOpenRequest||window.ARDSLogic.parseRoute(location.hash).id!==id)return;
-    state.current=problem;state.draft={};SECTIONS.forEach(s=>state.draft[s]=draft[s]||'');
+    state.current=problem;window.dispatchEvent(new CustomEvent("ards-java-open",{detail:problem.id}));state.draft={};SECTIONS.forEach(s=>state.draft[s]=draft[s]||'');
     state.loadedDraft=JSON.stringify(state.draft);
     state.lastSelected=id;localStorage.setItem('ards-last-selected',id);
     $('problem-id').textContent=problem.id;

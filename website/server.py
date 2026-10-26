@@ -49,6 +49,14 @@ def initialize_site(db=None):
     try:
         con.executescript("""
             PRAGMA journal_mode=WAL;
+            CREATE TABLE IF NOT EXISTS java_sessions(
+                challenge_id TEXT PRIMARY KEY, source TEXT NOT NULL DEFAULT '',
+                started_at TEXT, accepted_at TEXT
+            );
+            CREATE TABLE IF NOT EXISTS java_submissions(
+                id INTEGER PRIMARY KEY, challenge_id TEXT NOT NULL,
+                source TEXT NOT NULL, result_json TEXT NOT NULL, created_at TEXT NOT NULL
+            );
             CREATE TABLE IF NOT EXISTS ppc_drafts(
                 challenge_id TEXT PRIMARY KEY,
                 problem TEXT NOT NULL DEFAULT '',
@@ -66,6 +74,11 @@ def initialize_site(db=None):
             CREATE INDEX IF NOT EXISTS idx_draft_rev_challenge
                ON ppc_draft_revisions(challenge_id, id DESC);
         """)
+        columns={row[1] for row in con.execute("PRAGMA table_info(java_sessions)")}
+        for name,kind in (("paused_at","TEXT"),("stopped_at","TEXT"),("paused_seconds","REAL NOT NULL DEFAULT 0")):
+            if name not in columns:
+                con.execute(f"ALTER TABLE java_sessions ADD COLUMN {name} {kind}")
+        con.commit()
     finally:
         con.close()
 
@@ -341,6 +354,72 @@ def problem_detail(external_id):
         return result
 
 
+def java_action(external_id, body):
+    from java_judge import judge, test_suite
+    if not isinstance(body, dict):
+        raise ValueError("Expected a JSON object")
+    action=body.get("action", "load")
+    if action not in ("load", "save", "start", "pause", "resume", "stop", "run", "submit"):
+        raise ValueError("Unknown Java action")
+    source=body.get("source", "")
+    if not isinstance(source,str) or len(source.encode())>60000:
+        raise ValueError("Java source must be at most 60 KB")
+    with sqlite3.connect(WEB_DB) as con:
+        con.row_factory=sqlite3.Row
+        con.execute("INSERT OR IGNORE INTO java_sessions(challenge_id) VALUES (?)",(external_id,))
+        if action in ("save","run","submit"):
+            con.execute("UPDATE java_sessions SET source=? WHERE challenge_id=?",(source,external_id))
+        if action=="start":
+            con.execute("UPDATE java_sessions SET started_at=COALESCE(started_at,?) WHERE challenge_id=? AND accepted_at IS NULL",(now(),external_id))
+        if action in ("pause","resume","stop"):
+            current=dict(con.execute("SELECT * FROM java_sessions WHERE challenge_id=?",(external_id,)).fetchone())
+            if current['started_at'] and not current['accepted_at'] and not current['stopped_at']:
+                stamp=now()
+                if action=="pause" and not current['paused_at']:
+                    con.execute("UPDATE java_sessions SET paused_at=? WHERE challenge_id=?",(stamp,external_id))
+                elif action=="resume" and current['paused_at']:
+                    seconds=max(0,(datetime.fromisoformat(stamp)-datetime.fromisoformat(current['paused_at'])).total_seconds())
+                    con.execute("UPDATE java_sessions SET paused_seconds=paused_seconds+?,paused_at=NULL WHERE challenge_id=?",(seconds,external_id))
+                elif action=="stop":
+                    con.execute("UPDATE java_sessions SET stopped_at=? WHERE challenge_id=?",(current['paused_at'] or stamp,external_id))
+        session=dict(con.execute("SELECT * FROM java_sessions WHERE challenge_id=?",(external_id,)).fetchone())
+        last=con.execute("SELECT result_json FROM java_submissions WHERE challenge_id=? ORDER BY id DESC LIMIT 1",(external_id,)).fetchone()
+        session["last_submission"]=json.loads(last[0]) if last else None
+    if action not in ("run","submit"):
+        return session
+    if not source.strip():
+        raise ValueError("Write Java code first. Use public class Main without a package declaration.")
+    if action=="run":
+        custom=body.get("stdin")
+        if custom is not None and (not isinstance(custom,str) or len(custom.encode())>20000):
+            raise ValueError("Custom input must be at most 20 KB")
+        tests=[{"input":custom}] if custom is not None else problem_detail(external_id)["presentation_data"]["samples"]
+    else:
+        with database() as con:
+            ch=con.execute("SELECT * FROM challenges WHERE external_id=?",(external_id,)).fetchone()
+            edition=latest_classic_edition(con,ch["id"])
+            published=con.execute("SELECT body_json FROM published_revisions WHERE challenge_id=? ORDER BY revision DESC LIMIT 1",(ch["id"],)).fetchone() if not edition else None
+            package=json.loads(edition["package_json"]) if edition else json.loads(published[0]) if published else ards2.load_package(con,ch)[1]
+            try:
+                tests=test_suite(con,ch,package,ROOT)
+            except (IndexError,KeyError,StopIteration,AssertionError,TypeError,OSError) as exc:
+                raise ValueError("Submission unavailable: the reviewed test suite could not be prepared.") from exc
+    if not tests:
+        raise ValueError("No executable samples are available. Use custom input.")
+    result=judge(source,tests,private=action=="submit")
+    if action=="submit":
+        result["package_hash"]=ards2.digest(package)
+        result["source_sha256"]=hashlib.sha256(source.encode()).hexdigest()
+    with sqlite3.connect(WEB_DB) as con:
+        if action=="submit":
+            con.execute("INSERT INTO java_submissions(challenge_id,source,result_json,created_at) VALUES (?,?,?,?)",(external_id,source,json.dumps(result),now()))
+            if result["verdict"]=="Accepted":
+                con.execute("UPDATE java_sessions SET accepted_at=COALESCE(accepted_at,?) WHERE challenge_id=?",(now(),external_id))
+        con.row_factory=sqlite3.Row
+        session=dict(con.execute("SELECT started_at,accepted_at,paused_at,stopped_at,paused_seconds FROM java_sessions WHERE challenge_id=?",(external_id,)).fetchone())
+    return {**result,**session}
+
+
 def get_draft(external_id):
     with sqlite3.connect(WEB_DB) as con:
         row = con.execute(
@@ -589,6 +668,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self._file("index.html","text/html; charset=utf-8")
             if path=="/app.css":
                 return self._file("app.css","text/css; charset=utf-8")
+            if path=="/java-editor.js":
+                return self._file("java-editor.js","text/javascript; charset=utf-8")
+            if path=="/java-editor.css":
+                return self._file("java-editor.css","text/css; charset=utf-8")
             if path=="/app.js":
                 return self._file("app.js","text/javascript; charset=utf-8")
             if path=="/statement-renderer.js":
@@ -729,6 +812,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self._error(413,"Request body too large or empty.")
             body=json.loads(self.rfile.read(count).decode("utf-8"))
             path=urlparse(self.path).path
+            if path.startswith("/api/java/"):
+                external_id=path.rsplit("/",1)[-1]
+                if not problem_detail(external_id): return self._error(404,"Problem not found")
+                return self._json(java_action(external_id,body))
             if path.startswith("/api/drafts/"):
                 external_id=path.rsplit("/",1)[-1]
                 if not problem_detail(external_id):

@@ -241,3 +241,62 @@ and remaining weights renormalized. This never creates or rerolls a RACG draw.
 The library shows an animated result count only while search text is nonblank.
 The screenshot refinement regression suite is `node tests/polish_browser.mjs`
 (with the same development Playwright/browser variables described above).
+
+## Java practice
+
+Use the **PPC editor / Code editor · Java** picker at the top of the solution workspace. Only the selected editor and its actions are shown. Your choice is remembered in this browser, and both drafts survive switching. Left/Right arrows and Home/End operate the picker. The Java timer appears in its navigation button. Write a complete
+`Main.java` program (`public class Main`, no package declaration). The editor
+supports Java syntax coloring, automatic bracket/quote pairs, paired deletion, brace indentation, line numbers, local autosave, browser recovery, and Java
+file downloads. **Run tests** uses official samples or custom stdin; custom
+runs show output without a correctness verdict. **Submit Java** checks official
+samples plus the current hash-bound reviewer suite's edge and generated cases.
+Whitespace between output tokens is ignored; token spelling and order must match.
+A failed submission shows the first failing test number, input, expected output,
+actual output and runtime errors. These details persist with the submission.
+Acceptance means passing this finite suite, not a mathematical proof or PPC grade.
+Java submissions and source/version hashes are recorded separately in
+`ards-studio.db`; the canonical learner challenge and PPC assessment records are
+not changed by Java runs or submissions.
+
+**Start time**, beside **Focus** in the navigation bar, starts an optional server-persisted timer. It continues
+across navigation, browser closure, runs, compilation errors and failed submissions.
+The button displays elapsed time; click it to pause or resume, or use the adjacent
+**Stop** button to finish. Paused time is excluded, and pause/stop state survives
+reloads. The first accepted Java submission also finishes the timer. Stopped
+timers cannot be restarted; untimed practice remains available until you opt in. Code and timing are
+per problem, shared by this installation's single local user.
+
+Execution requires a local JDK (`java` and `javac`) and Linux `bubblewrap` (`bwrap`).
+The runner fails closed if these are unavailable. Java compiles with UTF-8,
+annotation processing disabled, and a 256 MiB compiler heap. Programs use a
+256 MiB Java heap, two active CPUs, a five-second wall limit per case, bounded
+output/files and process counts, and a 60-second overall test execution budget.
+These are local practice limits, not original contest hardware limits. A budget
+exhaustion is not acceptance. One judge job runs at a time. Each job has an
+isolated temporary workspace and no network or learner-archive filesystem access.
+Java programs are not allowed to depend on files outside that workspace.
+
+Legacy structured test fixtures use private stdin adapters. Every input must
+round-trip through the hash-bound reviewer's decoder; sample-derived layouts also
+must match the official sample tokens. Missing/stale reviewer evidence or an
+unsupported encoding blocks Submit with an explanation, while custom runs remain
+available. No reference algorithm enters the browser; only the first failing case is returned
+for a failed submission.
+
+Additional disposable-fixture checks:
+
+```sh
+python3 -m unittest discover -s tests -p test_java_judge.py -q
+node tests/java_browser.mjs
+```
+
+The Java browser check uses the same Playwright/Chromium environment variables
+as the existing browser suite and writes screenshots to `/tmp/ards-java-ui`.
+
+The workspace picker follows the [W3C APG tabs pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/)
+with one selected tab, linked panels, roving keyboard focus, and keyboard selection.
+[Exercism's online editor](https://exercism.org/docs/using/solving-exercises/using-the-online-editor)
+informed the separation of editing, test runs, and submission. The picker stays
+visible while the editor scrolls; PPC-only toolbar actions disappear in Java mode,
+and Ctrl+S saves the active editor. Alt+1–4 explicitly returns to the selected PPC
+section. Changing editors never submits work, starts a timer, or pauses one.

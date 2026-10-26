@@ -1,0 +1,32 @@
+.java-workspace{margin-bottom:20px;border:1px solid var(--border,#ddd);border-radius:10px;padding:14px;flex-shrink:0;min-width:0}.java-workspace summary{cursor:pointer;font-weight:600;color:#285849}.java-workspace p,.java-workspace small{font-size:13px;line-height:1.6}.java-workspace label{display:block;margin:10px 0;font-size:14px}.java-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:12px 0}.java-code{display:flex;border:1px solid #ccc;border-radius:6px;overflow:hidden;height:360px;background:#fff}.java-code pre{margin:0;padding:12px 8px;min-width:40px;text-align:right;color:#777;background:#f5f6f7;overflow:hidden;user-select:none}.java-code textarea{border:0;resize:none;flex:1;min-width:0;white-space:pre;overflow:auto;padding:12px;tab-size:4;outline-offset:-3px}.java-code textarea,.java-code pre{font:14px/22px monospace!important}.java-workspace #java-result{white-space:pre-wrap;overflow-wrap:anywhere;background:#f6f8fa;padding:12px;max-height:280px;overflow:auto;font:13px/1.6 monospace}.java-workspace #java-stdin{display:block;width:100%;font-family:monospace}.java-workspace #java-clock{font-variant-numeric:tabular-nums}.java-help{color:#555}@media(max-width:600px){.java-code{height:300px}.java-actions .button{flex:1}}
+/* The editor picker stays available while the selected workspace scrolls. */
+.editor-picker{position:sticky;top:-1px;z-index:4;background:#f7f9f5;padding:4px 0 16px;margin-bottom:18px;border-bottom:1px solid #dfe6dc}
+.editor-picker-label{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:10px;font-size:12px;color:#566457}
+#editor-timer-status{font-variant-numeric:tabular-nums;color:#285849}
+.editor-picker-tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border:1px solid #cdd8ce;border-radius:9px;background:#edf1eb}
+.editor-picker-tabs button{border:1px solid transparent;border-radius:6px;background:transparent;color:#516052;min-height:44px;padding:8px 10px;font:inherit;font-size:14px;cursor:pointer}
+.editor-picker-tabs button[aria-selected="true"]{background:white;border-color:#a7b9aa;color:#203f2c;font-weight:650;box-shadow:0 1px 3px #203f2c12}
+.editor-picker-tabs button:focus-visible{outline:2px solid #285849;outline-offset:2px}
+.editor-picker-tabs button span{font-size:12px;margin-left:5px;color:#566457}
+#editor-choice-help{font-size:13px;line-height:1.5;color:#566457;margin:10px 0 0}
+#ppc-workspace{display:flex;flex-direction:column;min-width:0;flex:1 0 auto}
+#ppc-workspace[hidden],#java-workspace[hidden]{display:none!important}
+#java-workspace{border:0;padding:0;margin:0;flex:1 0 auto}
+#java-workspace>p:first-child{margin-top:0}
+#view-problem[data-editor="java"] #save-status,#view-problem[data-editor="java"] #save-announce,#view-problem[data-editor="java"] #save-draft,#view-problem[data-editor="java"] #export-draft{display:none!important}
+@media(max-width:600px){.editor-picker-tabs button{padding:8px 5px}.editor-picker-tabs button span{display:block;margin:1px 0 0}.editor-picker{margin-bottom:14px}.java-code{height:340px}}
+#view-problem .editor-panel{padding-top:0}
+.editor-picker{top:0;padding-top:20px}
+/* Keep native textarea editing/undo with an inert, synchronized color layer. */
+.java-code-body{position:relative;flex:1;min-width:0;background:#fff;overflow:hidden}
+.java-code .java-code-body pre,.java-code .java-code-body textarea{position:absolute;inset:0;width:100%;height:100%;margin:0;padding:12px;border:0;border-radius:0;box-sizing:border-box;white-space:pre;overflow:auto;text-align:left;tab-size:4;font:14px/22px monospace!important;letter-spacing:normal;min-width:0}
+.java-code .java-code-body pre{background:#fff;color:#24292f;pointer-events:none;scrollbar-width:none;user-select:none}
+.java-code .java-code-body pre::-webkit-scrollbar{display:none}
+.java-code .java-code-body textarea{background:transparent;color:transparent;caret-color:#24292f;-webkit-text-fill-color:transparent;resize:none}
+.java-code textarea::selection{background:#b6d7ff80}
+.java-token-keyword{color:#8430a0}.java-token-string{color:#18643d}.java-token-comment{color:#62706a}.java-token-number{color:#075aa8}.java-token-type{color:#914607}
+#editor-choice-help:empty{display:none}
+#view-problem[data-editor="ppc"] #java-timed,#view-problem[data-editor="ppc"] #java-stop{display:none}
+#java-timed{font-variant-numeric:tabular-nums}
+@media(forced-colors:active){.java-code .java-code-body textarea{color:CanvasText;-webkit-text-fill-color:CanvasText}.java-code .java-code-body pre{visibility:hidden}}
+#java-stop[hidden]{display:none!important}
